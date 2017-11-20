@@ -200,12 +200,14 @@ class GenericmessageCommand extends SystemCommand
             \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
         }
         
-        $data = [
+        return Request::emptyResponse();
+
+        /*$data = [
             'chat_id' => $chat_id,
             'text'    => 'it works i have received message' . $text,
         ];
 
-        return Request::sendMessage($data);
+        return Request::sendMessage($data);*/
 
         //If a conversation is busy, execute the conversation command after handling the message
         /*$conversation = new Conversation(
