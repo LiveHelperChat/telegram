@@ -1,0 +1,111 @@
+{
+    "tables": {        
+        "lhc_telegram_chat": [
+            {
+                "field": "id",
+                "type": "bigint(20) unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "chat_id",
+                "type": "bigint(20) unsigned",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "tchat_id",
+                "type": "bigint(20) unsigned",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "bot_id",
+                "type": "int(11)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "ctime",
+                "type": "int(11)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "utime",
+                "type": "int(11)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "lhc_telegram_bot": [
+            {
+                "field": "id",
+                "type": "bigint(20) unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "chat_timeout",
+                "type": "int(11) unsigned",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "dep_id",
+                "type": "int(11) unsigned",
+                "null": "NO",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "webhook_set",
+                "type": "int(11) unsigned",
+                "null": "NO",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "bot_username",
+                "type": "varchar(20)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "field": "bot_api",
+                "type": "varchar(50)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ]
+    },  
+    "tables_data": {    },
+    "tables_data_identifier": {    },
+    "tables_indexes" : {    },
+    "tables_create": {
+    	"lhc_telegram_chat" : "CREATE TABLE `lhc_telegram_chat` (  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) unsigned NOT NULL, `tchat_id` bigint(20) unsigned NOT NULL, `bot_id` int(11) NOT NULL, `ctime` int(11) NOT NULL, `utime` int(11) NOT NULL, PRIMARY KEY (`id`),  KEY `tchat_id_utime` (`tchat_id`,`utime`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    	"lhc_telegram_bot" : "CREATE TABLE `lhc_telegram_bot` (  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `bot_username` varchar(20) NOT NULL, `bot_api` varchar(50) NOT NULL, `dep_id` int(11) unsigned NOT NULL, `webhook_set` int(11) unsigned NOT NULL, `chat_timeout` int(11) unsigned NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+    }
+}
