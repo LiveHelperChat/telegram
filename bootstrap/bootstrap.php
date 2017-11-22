@@ -100,15 +100,38 @@ class erLhcoreClassExtensionLhctelegram {
 	            }
 
 	            $tChat = erLhcoreClassModelTelegramChat::fetch($chatVariables['tchat_id']);
-	             
-	            $data = [
-	                'chat_id' => $tChat->tchat_id,
-	                'text'    => $params['msg']->msg,
-	            ];
-	          
-	            $telegram = new Longman\TelegramBot\Telegram($tChat->bot->bot_api, $tChat->bot->bot_username);
-	            Longman\TelegramBot\Request::sendMessage($data);
-	            
+
+                $telegram = new Longman\TelegramBot\Telegram($tChat->bot->bot_api, $tChat->bot->bot_username);
+
+                $images =$this->extractImages($params);
+
+                if (trim($params['msg']->msg) !== ''){
+                    $data = [
+                        'chat_id' => $tChat->tchat_id,
+                        'text'    => $params['msg']->msg,
+                    ];
+
+                    Longman\TelegramBot\Request::sendMessage($data);
+                }
+
+	            foreach ($images['images'] as $image) {
+                    $data = [
+                        'chat_id' => $tChat->tchat_id,
+                        'photo'   => $image,
+                    ];
+
+                    Longman\TelegramBot\Request::sendPhoto($data);
+                }
+
+	            foreach ($images['files'] as $doc) {
+                    $data = [
+                        'chat_id' => $tChat->tchat_id,
+                        'document'   => $doc,
+                    ];
+
+                    Longman\TelegramBot\Request::sendDocument($data);
+                }
+
 	            // General module signal that it has send an sms
 	            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_send_to_user',array('chat' => & $params['chat']));
 	            
@@ -144,7 +167,42 @@ class erLhcoreClassExtensionLhctelegram {
 	        }
 	    }
 	}
-	
+
+    private function extractImages(& $params)
+    {
+        $matches = array();
+
+        preg_match_all('/\[file="?(.*?)"?\]/is', $params['msg']->msg,$matches);
+
+        $files = array();
+
+        if (isset($matches[1])) {
+            foreach ($matches[1] as $matchItem) {
+                list($fileID,$hash) = explode('_',$matchItem);
+                try {
+                    $file = erLhcoreClassModelChatFile::fetch($fileID);
+                    $files[] = $file;
+                } catch (Exception $e) {
+
+                }
+            }
+        }
+
+        $params['msg']->msg = preg_replace('#\[file="?(.*?)"?\]#is', '', $params['msg']->msg);
+
+        $images = array('images' => array(),'files' => array());
+
+        foreach ($files as $file) {
+            if (in_array($file->type,array('image/png','image/jpeg','image/gif'))) {
+                $images['images'][] = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('file/downloadfile')."/{$file->id}/{$file->security_hash}/";
+            } else {
+                $images['files'][] = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('file/downloadfile')."/{$file->id}/{$file->security_hash}/" . $file->upload_name;
+            }
+        }
+
+        return $images;
+    }
+
 	public function __get($var) {
 		switch ($var) {
 			case 'is_active' :

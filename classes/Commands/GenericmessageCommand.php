@@ -13,6 +13,7 @@ namespace Longman\TelegramBot\Commands\SystemCommands;
 use Longman\TelegramBot\Commands\SystemCommand;
 use Longman\TelegramBot\Conversation;
 use Longman\TelegramBot\Request;
+use GuzzleHttp\Client;
 
 /**
  * Generic message command
@@ -53,6 +54,118 @@ class GenericmessageCommand extends SystemCommand
         return Request::emptyResponse();
     }
 
+    private function processObject($fileId, $chat, $tBot, $params = array())
+    {
+        //Download the photo after send message response to speedup response
+        $response2 = Request::getFile(['file_id' => $fileId]);
+
+        if ($response2->isOk()) {
+            $photo_file = $response2->getResult();
+
+            try {
+
+                $path = 'var/storage/' . date('Y') . 'y/' . date('m') . '/' . date('d') . '/' . $chat->id . '/';
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('file.uploadfile.file_path', array('path' => & $path, 'storage_id' => $chat->id));
+                \erLhcoreClassFileUpload::mkdirRecursive($path);
+
+                $filePath = $photo_file->getFilePath();
+
+                if (!isset($params['ext'])) {
+                    $parts = explode('.', $filePath);
+                    $ext = array_pop($parts);
+                } else {
+                    $ext = $params['ext'];
+                }
+
+                $mimeTypes = array(
+                    'mp3' => 'audio/mpeg',
+                    'ogg' => 'audio/ogg',
+                    'wav' => 'audio/wav',
+                    'mp4' => 'video/mp4',
+                    'webm'=> 'audio/webm',
+                    'gif' => 'image/gif',
+                    'png' => 'image/png',
+                    'jpg' => 'image/jpeg',
+                    'pdf' => 'application/pdf',
+                    'docx'=> 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'dotx'=> 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
+                    'xls' => 'application/vnd.ms-excel',
+                    'xlsx'=> 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                );
+
+                $partsNames = explode('/',$filePath);
+                $uploadName = array_pop($partsNames);
+
+                $fileUpload = new \erLhcoreClassModelChatFile();
+                $fileUpload->size = $photo_file->getFileSize();
+                $fileUpload->type = isset($mimeTypes[$ext]) ? $mimeTypes[$ext] : 'application/octet-stream';
+                $fileUpload->name = md5($filePath . time() . rand(0,100));
+                $fileUpload->date = time();
+                $fileUpload->user_id = 0;
+                $fileUpload->upload_name = $uploadName;
+                $fileUpload->file_path = $path;
+                $fileUpload->extension = $ext;
+                $fileUpload->chat_id = $chat->id;
+                $fileUpload->saveThis();
+
+                if (isset($params['convert'])) {
+
+                    $client = new Client(['base_uri' => 'https://api.telegram.org']);
+                    $client->get(
+                        '/file/bot' . $tBot->bot_api . '/' . $photo_file->getFilePath(),
+                        ['sink' => $path .  'convert_' . $fileUpload->name . '.ogg' ]
+                    );
+
+                    $cmd = str_replace(array('{file_orig}','{file_dest}'),array(escapeshellarg($path .  'convert_' . $fileUpload->name . '.ogg'), escapeshellarg($path .  $fileUpload->name . '.' . $ext)), $params['cmd']);
+                    @exec($cmd, $output, $error);
+                    rename($path .  $fileUpload->name . '.' . $ext, $path .  $fileUpload->name);
+                    unlink($path .  'convert_' . $fileUpload->name . '.ogg');
+
+                } else {
+                    $client = new Client(['base_uri' => 'https://api.telegram.org']);
+                    $client->get(
+                        '/file/bot' . $tBot->bot_api . '/' . $photo_file->getFilePath(),
+                        ['sink' => $path .  $fileUpload->name ]
+                    );
+                }
+
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('file.uploadfile.file_store', array('chat_file' => $fileUpload));
+
+                return '[file='.$fileUpload->id.'_'.md5($fileUpload->name.'_'.$chat->id).']';
+
+            } catch (\Exception $e) {
+                return $e->getMessage();
+            }
+        }
+    }
+
+    /*
+     * Process photo
+     */
+    private function processPhoto($chat, $message, $tBot) {
+        $photos = $message->getPhoto();
+        $photo = array_pop($photos);
+        return $this->processObject($photo->getFileId(), $chat, $tBot);
+    }
+
+    /**
+     * @param $fileId
+     * @param $chat
+     * @param $tBot
+     * @return string
+     */
+    private function processVoice($fileId, $chat, $tBot) {
+
+        $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+        $settings = $telegramExt->settings;
+
+        if (isset($settings['convert_ogg']) && $settings['convert_ogg'] == true) {
+            return $this->processObject($fileId, $chat, $tBot, array('cmd' => $settings['convert_command'], 'ext' => $settings['convert_to'], 'convert' => true));
+        } else {
+            return $this->processObject($fileId, $chat, $tBot, array('ext' => 'ogg'));
+        }
+    }
+
     /**
      * Command execute method
      *
@@ -63,8 +176,18 @@ class GenericmessageCommand extends SystemCommand
     {
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();
-        $text    = trim($message->getText(true));
-        
+        $type = $message->getType();
+
+        if ($type === 'message' || $type === 'text') {
+            $text = trim($message->getText(true));
+        } elseif ($type === 'photo' || $type === 'video' || $type === 'voice' || $type === 'sticker' || $type === 'document' || $type === 'audio') {
+            $text = '';
+        } elseif ($type === 'location') {
+            $text = 'https://www.google.com/maps/@'.$message->getLocation()->getLatitude().','.$message->getLocation()->getLongitude().',15z';
+        } else {
+            $text = 'Unsupported type - '.$type;
+        }
+
         $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
         $tBot = $telegramExt->getBot();
         
@@ -78,7 +201,21 @@ class GenericmessageCommand extends SystemCommand
         ));
         
         if ($tChat !== false && ($chat = $tChat->chat) !== false ) {
-            
+
+            if ($type === 'photo') {
+                $text = $this->processPhoto($chat, $message, $tBot);
+            } elseif ($type === 'document') {
+                $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'video') {
+                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'voice') {
+                $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'sticker') {
+                $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+            } elseif ($type === 'audio') {
+                $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
+            }
+
             $msg = new \erLhcoreClassModelmsg();
             $msg->msg = $text;
             $msg->chat_id = $chat->id;
@@ -153,7 +290,21 @@ class GenericmessageCommand extends SystemCommand
             $chat->referrer = '';
             $chat->session_referrer = '';
             $chat->saveThis();
-            
+
+            if ($type === 'photo') {
+                $text = $this->processPhoto($chat, $message, $tBot);
+            } elseif ($type === 'document') {
+                $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'video') {
+                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'voice') {
+                $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
+            } elseif ($type === 'sticker') {
+                $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+            } elseif ($type === 'audio') {
+                $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
+            }
+
             /**
              * Store new message
              */
