@@ -57,9 +57,10 @@ class erLhcoreClassExtensionLhctelegram {
 	
 	public function autoload($className) {
 		$classesArray = array (
-				'erLhcoreClassModelTelegramBot'  => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegrambot.php',
-				'erLhcoreClassModelTelegramChat'  => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramchat.php',
-				'erLhcoreClassTelegramValidator'=> 'extension/lhctelegram/classes/erlhcoreclasstelegramvalidator.php'
+				'erLhcoreClassModelTelegramBot'         => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegrambot.php',
+				'erLhcoreClassModelTelegramChat'        => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramchat.php',
+				'erLhcoreClassModelTelegramSignature'   => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramsignature.php',
+				'erLhcoreClassTelegramValidator'        => 'extension/lhctelegram/classes/erlhcoreclasstelegramvalidator.php'
 		);
 		
 		if (key_exists ( $className, $classesArray )) {
@@ -105,10 +106,17 @@ class erLhcoreClassExtensionLhctelegram {
 
                 $images =$this->extractImages($params);
 
-                if (trim($params['msg']->msg) !== ''){
+                if (trim($params['msg']->msg) !== '') {
+
+                    $signatureText = '';
+                    $signature = erLhcoreClassModelTelegramSignature::findOne(array('filter' => array('bot_id' => $tChat->bot_id, 'user_id' => erLhcoreClassUser::instance()->getUserID())));
+                    if ($signature instanceof erLhcoreClassModelTelegramSignature) {
+                        $signatureText = $signature->signature;
+                    }
+
                     $data = [
                         'chat_id' => $tChat->tchat_id,
-                        'text'    => $params['msg']->msg,
+                        'text'    => trim($params['msg']->msg) . $signatureText,
                     ];
 
                     Longman\TelegramBot\Request::sendMessage($data);

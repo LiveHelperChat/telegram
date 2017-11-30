@@ -34,6 +34,12 @@ $ViewList['edit'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['editsignature'] = array(
+    'params' => array('id'),
+    'uparams' => array('action','itemid','status'),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['setwebhook'] = array(
     'params' => array('id'),
     'uparams' => array(),
