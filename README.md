@@ -11,7 +11,7 @@ This extension allow have support for telegram bot support directly in Live Help
 'extensions' => 
     array (          
         'lhctelegram'
-    )
+    ),
 ```
 4. Clean cache. Just click clean cache in Live Helper Chat back office.
 5. Execute doc/install.sql on database manager or just run
