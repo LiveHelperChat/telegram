@@ -15,7 +15,7 @@ This extension allow have support for telegram bot support directly in Live Help
 ```
 4. Install composer requirements with. You have to download composer or just have it installed already.
 ``` 
-composer.phar update
+cd extension/lhctelegram && composer.phar update
 ``` 
 5. Clean cache. Just click clean cache in Live Helper Chat back office.
 6. Execute doc/install.sql on database manager or just run
