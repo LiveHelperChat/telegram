@@ -11,14 +11,18 @@ This extension allow have support for telegram bot support directly in Live Help
 'extensions' => 
     array (          
         'lhctelegram'
-    )
+    ),
 ```
-4. Clean cache. Just click clean cache in Live Helper Chat back office.
-5. Execute doc/install.sql on database manager or just run
+4. Install composer requirements with. You have to download composer or just have it installed already.
+``` 
+cd extension/lhctelegram && composer.phar update
+``` 
+5. Clean cache. Just click clean cache in Live Helper Chat back office.
+6. Execute doc/install.sql on database manager or just run
     ```
     php cron.php -s site_admin -e lhctelegram -c cron/update_structure
     ```
-6. Register your bot with https://core.telegram.org/bots#6-botfather
-7. Create bot in LHC back office.
-8. After creating bot, go back and just click. "Set webhook"
-9. That's it.
+7. Register your bot with https://core.telegram.org/bots#6-botfather
+8. Create bot in LHC back office.
+9. After creating bot, go back and just click. "Set webhook"
+10. That's it.
