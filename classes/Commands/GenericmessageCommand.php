@@ -174,6 +174,8 @@ class GenericmessageCommand extends SystemCommand
      */
     public function execute()
     {
+
+
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();
         $type = $message->getType();
@@ -208,6 +210,8 @@ class GenericmessageCommand extends SystemCommand
                 $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
             } elseif ($type === 'video') {
                 $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+            } elseif ($message->getVideoNote()) {
+                $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($type === 'voice') {
                 $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
             } elseif ($type === 'sticker') {
@@ -297,6 +301,8 @@ class GenericmessageCommand extends SystemCommand
                 $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
             } elseif ($type === 'video') {
                 $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+            } elseif ($message->getVideoNote()) {
+                $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($type === 'voice') {
                 $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
             } elseif ($type === 'sticker') {
