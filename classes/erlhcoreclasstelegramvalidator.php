@@ -74,6 +74,29 @@ class erLhcoreClassTelegramValidator
         } else {
             $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please choose a user!');
         }
+
+        return $Errors;
+    }
+
+    public static function validateSignatureGlobal(erLhcoreClassModelTelegramSignature & $item)
+    {
+        $definition = array(
+            'bot_id' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
+            )
+        );
+
+        $form = new ezcInputForm(INPUT_POST, $definition);
+
+        if ($form->hasValidData('bot_id')) {
+            $item->bot_id = $form->bot_id;
+        } else {
+            $item->bot_id = 0;
+        }
+
+        $Errors = self::validateSignature($item);
+
+        return $Errors;
     }
 
 }

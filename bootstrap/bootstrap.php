@@ -45,7 +45,12 @@ class erLhcoreClassExtensionLhctelegram {
 		$dispatcher->listen('instance.destroyed', array(
 		    $this,
 		    'instanceDestroyed'
-		));		
+		));
+
+		$dispatcher->listen('telegram.get_signature', array(
+		    $this,
+		    'getSignature'
+		));
 	}
 
 	public function registerAutoload() {
@@ -74,6 +79,29 @@ class erLhcoreClassExtensionLhctelegram {
 		}
 		return self::$persistentSession;
 	}
+
+    /**
+     * @desc Returns signature. Other extensions can use this callback also. E.g Twilio extension
+     *
+     * @param $params
+     * @return array
+     */
+	public function getSignature($params) {
+
+	    if (isset($params['bot_id'])) {
+            $signature = erLhcoreClassModelTelegramSignature::findOne(array('filter' => array('bot_id' => $params['bot_id'], 'user_id' => $params['user_id'])));
+            if ($signature instanceof erLhcoreClassModelTelegramSignature) {
+                return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'signature' => $signature->signature);
+            }
+        }
+
+        $signature = erLhcoreClassModelTelegramSignature::findOne(array('filter' => array('bot_id' => 0, 'user_id' => $params['user_id'])));
+        if ($signature instanceof erLhcoreClassModelTelegramSignature) {
+            return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'signature' => $signature->signature);
+        }
+
+        return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'signature' =>'');
+    }
 
 	/**
 	 * Sends SMS to user
@@ -109,9 +137,12 @@ class erLhcoreClassExtensionLhctelegram {
                 if (trim($params['msg']->msg) !== '') {
 
                     $signatureText = '';
-                    $signature = erLhcoreClassModelTelegramSignature::findOne(array('filter' => array('bot_id' => $tChat->bot_id, 'user_id' => erLhcoreClassUser::instance()->getUserID())));
-                    if ($signature instanceof erLhcoreClassModelTelegramSignature) {
-                        $signatureText = $signature->signature;
+
+                    // General module signal that it has send an sms
+                    $statusSignature = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.get_signature',array('user_id' => erLhcoreClassUser::instance()->getUserID(), 'bot_id' => $tChat->bot_id));
+
+                    if ($statusSignature !== false) {
+                        $signatureText = $statusSignature['signature'];
                     }
 
                     $data = [

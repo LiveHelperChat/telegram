@@ -2,4 +2,5 @@
 
 <ul>
     <li><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/list')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Telegram bots');?></a></li>
+    <li><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/signatures')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Signatures');?></a></li>
 </ul>

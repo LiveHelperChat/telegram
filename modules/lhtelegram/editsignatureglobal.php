@@ -1,36 +1,36 @@
-<?php 
+<?php
 
-$tpl = erLhcoreClassTemplate::getInstance('lhtelegram/edit.tpl.php');
+$tpl = erLhcoreClassTemplate::getInstance('lhtelegram/editsignatureglobal.tpl.php');
 
-$item =  erLhcoreClassModelTelegramBot::fetch($Params['user_parameters']['id']);
+$item = erLhcoreClassModelTelegramSignature::fetch($Params['user_parameters']['id']);
 
 if (ezcInputForm::hasPostData()) {
-        
+
     if (isset($_POST['Cancel_action'])) {
         erLhcoreClassModule::redirect('twilio/list');
         exit ;
     }
-    
-    $Errors = erLhcoreClassTelegramValidator::validateBot($item);
+
+    $Errors = erLhcoreClassTelegramValidator::validateSignatureGlobal($item);
 
     if (count($Errors) == 0) {
         try {
             $item->saveThis();
-                       
-            erLhcoreClassModule::redirect('telegram/list');
+
+            erLhcoreClassModule::redirect('telegram/signatures');
             exit;
-            
+
         } catch (Exception $e) {
             $tpl->set('errors',array($e->getMessage()));
         }
 
     } else {
         $tpl->set('errors',$Errors);
-    }       
+    }
 }
 
 $tpl->setArray(array(
-        'item' => $item,
+    'item' => $item,
 ));
 
 $Result['content'] = $tpl->fetch();
@@ -38,11 +38,11 @@ $Result['content'] = $tpl->fetch();
 $Result['path'] = array(
     array('url' =>erLhcoreClassDesign::baseurl('telegram/index'), 'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Telegram')),
     array (
-        'url' =>erLhcoreClassDesign::baseurl('telegram/list'), 
-        'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Telegram bots')        
+        'url' =>erLhcoreClassDesign::baseurl('telegram/signatures'),
+        'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Signatures')
     ),
-    array (       
-        'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger', 'Edit bot')
+    array (
+        'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger', 'Edit signature')
     )
 );
 

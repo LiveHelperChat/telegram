@@ -40,6 +40,30 @@ $ViewList['editsignature'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['editsignatureglobal'] = array(
+    'params' => array('id'),
+    'uparams' => array('action','itemid','status'),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['deletesignature'] = array(
+    'params' => array('id'),
+    'uparams' => array('csfr'),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['signatures'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['newsignature'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['setwebhook'] = array(
     'params' => array('id'),
     'uparams' => array(),
