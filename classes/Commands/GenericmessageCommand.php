@@ -209,7 +209,7 @@ class GenericmessageCommand extends SystemCommand
             } elseif ($type === 'document') {
                 $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
             } elseif ($type === 'video') {
-                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($message->getVideoNote()) {
                 $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($type === 'voice') {
@@ -300,7 +300,7 @@ class GenericmessageCommand extends SystemCommand
             } elseif ($type === 'document') {
                 $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
             } elseif ($type === 'video') {
-                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot);
+                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($message->getVideoNote()) {
                 $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
             } elseif ($type === 'voice') {
