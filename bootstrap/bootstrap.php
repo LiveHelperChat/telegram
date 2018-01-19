@@ -81,6 +81,18 @@ class erLhcoreClassExtensionLhctelegram {
 	}
 
     /**
+     * @desc delete chat if exists
+     *
+     * @param $params
+     */
+	public function deleteChat($params) {
+        $db = ezcDbInstance::get();
+        $stmt = $db->prepare('DELETE FROM lhc_telegram_chat WHERE chat_id = :chat_id');
+        $stmt->bindValue(':chat_id', $params['chat']->id, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
+    /**
      * @desc Returns signature. Other extensions can use this callback also. E.g Twilio extension
      *
      * @param $params
