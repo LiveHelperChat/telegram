@@ -1,6 +1,6 @@
 <div class="form-group">
     <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Bot username');?>*</label>
-    <input type="text" maxlength="20" class="form-control" name="bot_username" value="<?php echo htmlspecialchars($item->bot_username)?>" />
+    <input type="text" maxlength="50" class="form-control" name="bot_username" value="<?php echo htmlspecialchars($item->bot_username)?>" />
 </div>
 
 <div class="form-group">
