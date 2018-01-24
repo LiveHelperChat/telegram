@@ -198,7 +198,8 @@ class GenericmessageCommand extends SystemCommand
                 'utime' => (time() - $tBot->chat_timeout)
             ),
             'filter' => array(
-                'tchat_id' => $chat_id
+                'tchat_id' => $chat_id,
+                'bot_id' => $tBot->id
             )
         ));
         
