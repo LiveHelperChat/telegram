@@ -53,7 +53,7 @@ class StartCommand extends SystemCommand
      */
     public function execute()
     {
-        $message = $this->getMessage();
+        /*$message = $this->getMessage();
 
         $chat_id = $message->getChat()->getId();
         $text    = 'Hi there!' . PHP_EOL . 'Type /help to see all commands!';
@@ -63,6 +63,7 @@ class StartCommand extends SystemCommand
             'text'    => $text,
         ];
 
-        return Request::sendMessage($data);
+        return Request::sendMessage($data);*/
+        return Request::emptyResponse();
     }
 }
