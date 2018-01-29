@@ -109,6 +109,10 @@ class CallbackqueryCommand extends SystemCommand
 
                     $variablesArray = $chat->chat_variables_array;
 
+                    if (!is_array($variablesArray)) {
+                        $variablesArray = array();
+                    }
+
                     if (!isset($variablesArray['telegram_chat_op']) || $operator->id != $variablesArray['telegram_chat_op']) {
                         $variablesArray['telegram_chat_op'] = $operator->id;
                         $chat->chat_variables = json_encode($variablesArray);
@@ -193,6 +197,11 @@ class CallbackqueryCommand extends SystemCommand
                     }
 
                     $variablesArray = $chat->chat_variables_array;
+
+                    if (!is_array($variablesArray)) {
+                        $variablesArray = array();
+                    }
+
                     $variablesArray['telegram_chat_op'] = $operator->id;
                     $chat->chat_variables = json_encode($variablesArray);
                     $chat->chat_variables_array = $variablesArray;
