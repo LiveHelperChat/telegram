@@ -23,6 +23,7 @@
 <ul class="nav nav-pills" role="tablist">
     <li role="presentation"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
     <li role="presentation" class="active"><a href="#signature" role="tab" data-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
+    <li role="presentation" class="active"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
 </ul>
 
 <div class="tab-content">

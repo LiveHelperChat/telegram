@@ -30,8 +30,8 @@ cd extension/lhctelegram && composer.phar update
 ## Telegram as Support Client
 This allows to use bot as gateway between normal chats on your page and bot chatting with you as a operator. In other words you can use Telegram mobile and desktop clients as Live Helper Chat support clients.
 
-1. After you have done everything since 9 step. You have to do the following changes. Go to bot editing page and choose departments. For these departments you will receive new chats requests.
-2. Check in same window "This bot acts as client"
-3. Now go to back office main telegram page and choose "Telegram operators". Choose Operator and bot.
+1. After you have done everything since 9 step. You have to do the following changes. Go to bot editing page and choose departments. For these departments you will receive new chats notifications.
+2. Check in same window "This bot acts as a client"
+3. Now go to back office main telegram page and choose "Telegram operators". Choose Operator and Bot.
 4. Now start conversation and register yourself within bot by typing /register <id> id should be registered operator id. Very first column in operators list.
-5. That's all. Just type /help to see what's available commands are supported.
+5. That's all. Just type /help to see what available commands are supported.
