@@ -53,17 +53,24 @@ class StartCommand extends SystemCommand
      */
     public function execute()
     {
-        /*$message = $this->getMessage();
+        $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+        $tBot = $telegramExt->getBot();
 
-        $chat_id = $message->getChat()->getId();
-        $text    = 'Hi there!' . PHP_EOL . 'Type /help to see all commands!';
+        // If it's bot as client indicate he can type help
+        if ($tBot->bot_client == 1) {
+            $message = $this->getMessage();
 
-        $data = [
-            'chat_id' => $chat_id,
-            'text'    => $text,
-        ];
+            $chat_id = $message->getChat()->getId();
+            $text    = 'Hi there!' . PHP_EOL . 'Type /help to see all commands!';
 
-        return Request::sendMessage($data);*/
-        return Request::emptyResponse();
+            $data = [
+                'chat_id' => $chat_id,
+                'text'    => $text,
+            ];
+
+            return Request::sendMessage($data);
+        } else {
+            return Request::emptyResponse();
+        }
     }
 }

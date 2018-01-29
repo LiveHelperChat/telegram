@@ -20,6 +20,7 @@ class erLhcoreClassModelTelegramBot
             'webhook_set' => $this->webhook_set,
             'bot_api' => $this->bot_api,
             'dep_id' => $this->dep_id,
+            'bot_client' => $this->bot_client,
             'chat_timeout' => $this->chat_timeout
         );
     }  
@@ -44,6 +45,17 @@ class erLhcoreClassModelTelegramBot
         }
     }
 
+    public function getDepartments()
+    {
+        $items = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('bot_id' => $this->id)));
+        $returnItems = array();
+        foreach ($items as $item) {
+            $returnItems[$item->dep_id] = $item;
+        }
+        
+        return $returnItems;
+    }
+
     /**
      * Delete page chat's
      */
@@ -60,6 +72,8 @@ class erLhcoreClassModelTelegramBot
     public $bot_username = null;
 
     public $bot_api = null;
+    
+    public $bot_client = 0;
 
     public $dep_id = null;
 

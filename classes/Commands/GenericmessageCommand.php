@@ -175,7 +175,6 @@ class GenericmessageCommand extends SystemCommand
     public function execute()
     {
 
-
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();
         $type = $message->getType();
@@ -192,192 +191,312 @@ class GenericmessageCommand extends SystemCommand
 
         $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
         $tBot = $telegramExt->getBot();
-        
-        $tChat = \erLhcoreClassModelTelegramChat::findOne(array(
-            'filtergt' => array(
-                'utime' => (time() - $tBot->chat_timeout)
-            ),
-            'filter' => array(
-                'tchat_id' => $chat_id,
-                'bot_id' => $tBot->id
-            )
-        ));
-        
-        if ($tChat !== false && ($chat = $tChat->chat) !== false ) {
 
-            if ($type === 'photo') {
-                $text = $this->processPhoto($chat, $message, $tBot);
-            } elseif ($type === 'document') {
-                $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
-            } elseif ($type === 'video') {
-                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
-            } elseif ($message->getVideoNote()) {
-                $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
-            } elseif ($type === 'voice') {
-                $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
-            } elseif ($type === 'sticker') {
-                $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
-            } elseif ($type === 'audio') {
-                $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
-            }
+        if ($tBot->bot_client == 1) {
 
-            $msg = new \erLhcoreClassModelmsg();
-            $msg->msg = $text;
-            $msg->chat_id = $chat->id;
-            $msg->user_id = 0;
-            $msg->time = time();
-            
-            \erLhcoreClassChat::getSession()->save($msg);
-            
-            // Update related chat attributes
-            $db = \ezcDbInstance::get();
-            $db->beginTransaction();
-            
-            $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = 1 WHERE id = :id');
-            $stmt->bindValue(':id', $chat->id, \PDO::PARAM_INT);
-            $stmt->bindValue(':last_user_msg_time', $msg->time, \PDO::PARAM_INT);
-            
-            // Set last message ID
-            if ($chat->last_msg_id < $msg->id) {
-                $stmt->bindValue(':last_msg_id', $msg->id, \PDO::PARAM_INT);
+            $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tchat_id' => $chat_id, 'confirmed' => 1, 'bot_id' => $tBot->id)));
+
+            if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
+
+                if ($operator->chat_id > 0) {
+
+                    $chat = $operator->chat;
+
+                    if ($chat instanceof \erLhcoreClassModelChat) {
+
+                        if ($type === 'photo') {
+                            $text = $this->processPhoto($chat, $message, $tBot);
+                        } elseif ($type === 'document') {
+                            $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
+                        } elseif ($type === 'video') {
+                            $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                        } elseif ($message->getVideoNote()) {
+                            $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                        } elseif ($type === 'voice') {
+                            $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
+                        } elseif ($type === 'sticker') {
+                            $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+                        } elseif ($type === 'audio') {
+                            $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
+                        }
+
+                        $ignoreMessage = false;
+
+                        if (strpos(trim($text), '!') === 0) {
+
+                            $statusCommand = \erLhcoreClassChatCommand::processCommand(array(
+                                'no_ui_update' => true,
+                                'msg' => $text,
+                                'chat' => & $chat,
+                                'user' => $operator->user
+                            ));
+
+                            if ($statusCommand['processed'] === true) {
+
+                                $rawMessage = !isset($statusCommand['raw_message']) ? $text : $statusCommand['raw_message'];
+
+                                $text = '[b]' . $operator->user->name_support . '[/b]: ' . $rawMessage . ' ' . ($statusCommand['process_status'] != '' ? '|| ' . $statusCommand['process_status'] : '');
+                            }
+
+                            if (isset($statusCommand['ignore']) && $statusCommand['ignore'] == true) {
+                                $ignoreMessage = true;
+                            }
+
+                            if (isset($statusCommand['info'])) {
+                                $data = [
+                                    'chat_id' => $chat_id,
+                                    'text'    => '[[System Assistant]] ' . $statusCommand['info'],
+                                ];
+                                return Request::sendMessage($data);
+                            }
+                        }
+
+                        if ($ignoreMessage == false) {
+                            $msg = new \erLhcoreClassModelmsg();
+                            $msg->msg = $text;
+                            $msg->chat_id = $chat->id;
+                            $msg->user_id = $operator->user_id;
+                            $msg->time = time();
+                            $msg->name_support = $operator->user->name_support;
+
+                            \erLhcoreClassChat::getSession()->save($msg);
+
+                            $db = \ezcDbInstance::get();
+                            $stmt = $db->prepare('UPDATE lh_chat SET status = :status, user_status = :user_status, last_msg_id = :last_msg_id, last_op_msg_time = :last_op_msg_time, has_unread_op_messages = :has_unread_op_messages, unread_op_messages_informed = :unread_op_messages_informed WHERE id = :id');
+                            $stmt->bindValue(':id',$chat->id,\PDO::PARAM_INT);
+                            $stmt->bindValue(':last_msg_id',$msg->id,\PDO::PARAM_INT);
+                            $stmt->bindValue(':last_op_msg_time',time(),\PDO::PARAM_INT);
+                            $stmt->bindValue(':has_unread_op_messages',1,\PDO::PARAM_INT);
+                            $stmt->bindValue(':unread_op_messages_informed',0,\PDO::PARAM_INT);
+
+                            if ($operator->user->invisible_mode == 0) { // Change status only if it's not internal command
+                                if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
+                                    $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
+                                    $chat->user_id = $operator->user_id;
+                                }
+                            }
+
+                            $stmt->bindValue(':user_status',$chat->user_status,\PDO::PARAM_INT);
+                            $stmt->bindValue(':status',$chat->status,\PDO::PARAM_INT);
+                            $stmt->execute();
+
+                            // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
+                            // This allows NodeJS users to know about new message. In this particular case it's admin users
+                            // If operator has opened chat instantly sync
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.messages_added_passive', array(
+                                'chat' => & $chat
+                            ));
+
+                            // If operator has closed a chat we need force back office sync
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
+                                'chat' => & $chat
+                            ));
+
+                            // General module signal that it has received an sms
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received', array('chat' => & $chat));
+
+                            if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
+                                $data = [
+                                    'chat_id' => $chat_id,
+                                    'text'    => "You send a message to a closed chat!",
+                                ];
+
+                                return Request::sendMessage($data);
+                            }
+                        }
+
+                    } else {
+                        $data = [
+                            'chat_id' => $chat_id,
+                            'text'    => "Chat could not be found!",
+                        ];
+
+                        return Request::sendMessage($data);
+                    }
+
+                } else {
+                    $data = [
+                        'chat_id' => $chat_id,
+                        'text'    => "You do not have any chat associated with your account!",
+                    ];
+                    return Request::sendMessage($data);
+                }
+
             } else {
-                $stmt->bindValue(':last_msg_id', $chat->last_msg_id, \PDO::PARAM_INT);
+                $data = [
+                    'chat_id' => $chat_id,
+                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat",
+                ];
+                return Request::sendMessage($data);
             }
-            
-            $stmt->execute();
-            
-            $tChat->utime = time();
-            $tChat->saveThis();
-            
-            $db->commit();
-            
-            // Standard event on unread chat messages
-            if ($chat->has_unread_messages == 1 && $chat->last_user_msg_time < (time() - 5)) {
-                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.unread_chat', array(
+
+        } else {
+            $tChat = \erLhcoreClassModelTelegramChat::findOne(array(
+                'filtergt' => array(
+                    'utime' => (time() - $tBot->chat_timeout)
+                ),
+                'filter' => array(
+                    'tchat_id' => $chat_id,
+                    'bot_id' => $tBot->id
+                )
+            ));
+
+            if ($tChat !== false && ($chat = $tChat->chat) !== false ) {
+
+                if ($type === 'photo') {
+                    $text = $this->processPhoto($chat, $message, $tBot);
+                } elseif ($type === 'document') {
+                    $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
+                } elseif ($type === 'video') {
+                    $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                } elseif ($message->getVideoNote()) {
+                    $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                } elseif ($type === 'voice') {
+                    $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
+                } elseif ($type === 'sticker') {
+                    $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+                } elseif ($type === 'audio') {
+                    $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
+                }
+
+                $msg = new \erLhcoreClassModelmsg();
+                $msg->msg = $text;
+                $msg->chat_id = $chat->id;
+                $msg->user_id = 0;
+                $msg->time = time();
+
+                \erLhcoreClassChat::getSession()->save($msg);
+
+                // Update related chat attributes
+                $db = \ezcDbInstance::get();
+                $db->beginTransaction();
+
+                $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = 1 WHERE id = :id');
+                $stmt->bindValue(':id', $chat->id, \PDO::PARAM_INT);
+                $stmt->bindValue(':last_user_msg_time', $msg->time, \PDO::PARAM_INT);
+
+                // Set last message ID
+                if ($chat->last_msg_id < $msg->id) {
+                    $stmt->bindValue(':last_msg_id', $msg->id, \PDO::PARAM_INT);
+                } else {
+                    $stmt->bindValue(':last_msg_id', $chat->last_msg_id, \PDO::PARAM_INT);
+                }
+
+                $stmt->execute();
+
+                $tChat->utime = time();
+                $tChat->saveThis();
+
+                $db->commit();
+
+                // Standard event on unread chat messages
+                if ($chat->has_unread_messages == 1 && $chat->last_user_msg_time < (time() - 5)) {
+                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.unread_chat', array(
+                        'chat' => & $chat
+                    ));
+                }
+
+                // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
+                // This allows NodeJS users to know about new message. In this particular case it's admin users
+                // If operator has opened chat instantly sync
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.messages_added_passive', array(
                     'chat' => & $chat
                 ));
-            }
-            
-            // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
-            // This allows NodeJS users to know about new message. In this particular case it's admin users
-            // If operator has opened chat instantly sync
-            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.messages_added_passive', array(
-                'chat' => & $chat
-            ));
-            
-            // If operator has closed a chat we need force back office sync
-            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
-                'chat' => & $chat
-            ));
-            
-            // General module signal that it has received an sms
-            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
-            
-        } else {
-            $chat = new \erLhcoreClassModelChat();
-            
-            $depId = $tBot->dep_id;
-            $department = \erLhcoreClassModelDepartament::fetch($depId);
-            
-            if ($department instanceof \erLhcoreClassModelDepartament) {
-                $chat->dep_id = $department->id;
-                $chat->priority = $department->priority;
+
+                // If operator has closed a chat we need force back office sync
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
+                    'chat' => & $chat
+                ));
+
+                // General module signal that it has received an sms
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
+
             } else {
-                throw new Exception('Could not find department by bot - ' . $tBot->id);
+                $chat = new \erLhcoreClassModelChat();
+
+                $depId = $tBot->dep_id;
+                $department = \erLhcoreClassModelDepartament::fetch($depId);
+
+                if ($department instanceof \erLhcoreClassModelDepartament) {
+                    $chat->dep_id = $department->id;
+                    $chat->priority = $department->priority;
+                } else {
+                    throw new Exception('Could not find department by bot - ' . $tBot->id);
+                }
+
+                $from = $message->getProperty('from');
+
+                $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
+                $chat->time = time();
+                $chat->status = 0;
+                $chat->hash = \erLhcoreClassChat::generateHash();
+                $chat->referrer = '';
+                $chat->session_referrer = '';
+                $chat->saveThis();
+
+                if ($type === 'photo') {
+                    $text = $this->processPhoto($chat, $message, $tBot);
+                } elseif ($type === 'document') {
+                    $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
+                } elseif ($type === 'video') {
+                    $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                } elseif ($message->getVideoNote()) {
+                    $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
+                } elseif ($type === 'voice') {
+                    $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
+                } elseif ($type === 'sticker') {
+                    $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+                } elseif ($type === 'audio') {
+                    $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
+                }
+
+                /**
+                 * Store new message
+                 */
+                $msg = new \erLhcoreClassModelmsg();
+                $msg->msg = $text;
+                $msg->chat_id = $chat->id;
+                $msg->user_id = 0;
+                $msg->time = time();
+
+                \erLhcoreClassChat::getSession()->save($msg);
+
+                /**
+                 * Set appropriate chat attributes
+                 */
+                $chat->last_msg_id = $msg->id;
+                $chat->last_user_msg_time = $msg->time;
+
+                /**
+                 * Save telegram chat
+                 */
+                $tChat = new \erLhcoreClassModelTelegramChat();
+                $tChat->bot_id = $tBot->id;
+                $tChat->tchat_id = $chat_id;
+                $tChat->chat_id = $chat->id;
+                $tChat->utime = time();
+                $tChat->ctime = time();
+                $tChat->saveThis();
+
+                $chat->chat_variables = json_encode(array(
+                    'tchat' => true,
+                    'tchat_id' => $tChat->id
+                ));
+
+                $chat->saveThis();
+
+                /**
+                 * Execute standard callback as chat was started
+                 */
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array(
+                    'chat' => & $chat
+                ));
+
+                // General module signal that it has received an sms
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
             }
-            
-            $from = $message->getProperty('from');
-
-            $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
-            $chat->time = time();
-            $chat->status = 0;
-            $chat->hash = \erLhcoreClassChat::generateHash();
-            $chat->referrer = '';
-            $chat->session_referrer = '';
-            $chat->saveThis();
-
-            if ($type === 'photo') {
-                $text = $this->processPhoto($chat, $message, $tBot);
-            } elseif ($type === 'document') {
-                $text = $this->processObject($message->getDocument()->getFileId(), $chat, $tBot);
-            } elseif ($type === 'video') {
-                $text = $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
-            } elseif ($message->getVideoNote()) {
-                $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
-            } elseif ($type === 'voice') {
-                $text = $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot);
-            } elseif ($type === 'sticker') {
-                $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
-            } elseif ($type === 'audio') {
-                $text = $this->processObject($message->getAudio()->getFileId(), $chat, $tBot);
-            }
-
-            /**
-             * Store new message
-             */
-            $msg = new \erLhcoreClassModelmsg();
-            $msg->msg = $text;
-            $msg->chat_id = $chat->id;
-            $msg->user_id = 0;
-            $msg->time = time();
-            
-            \erLhcoreClassChat::getSession()->save($msg);
-            
-            /**
-             * Set appropriate chat attributes
-             */
-            $chat->last_msg_id = $msg->id;
-            $chat->last_user_msg_time = $msg->time;
-            
-            /**
-             * Save telegram chat
-             */
-            $tChat = new \erLhcoreClassModelTelegramChat();
-            $tChat->bot_id = $tBot->id;
-            $tChat->tchat_id = $chat_id;
-            $tChat->chat_id = $chat->id;
-            $tChat->utime = time();
-            $tChat->ctime = time();
-            $tChat->saveThis();
-            
-            $chat->chat_variables = json_encode(array(
-                'tchat' => true,
-                'tchat_id' => $tChat->id
-            ));
-            
-            $chat->saveThis();
-
-            /**
-             * Execute standard callback as chat was started
-             */
-            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array(
-                'chat' => & $chat
-            ));
-            
-            // General module signal that it has received an sms
-            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
         }
         
         return Request::emptyResponse();
-
-        /*$data = [
-            'chat_id' => $chat_id,
-            'text'    => 'it works i have received message' . $text,
-        ];
-
-        return Request::sendMessage($data);*/
-
-        //If a conversation is busy, execute the conversation command after handling the message
-        /*$conversation = new Conversation(
-            $this->getMessage()->getFrom()->getId(),
-            $this->getMessage()->getChat()->getId()
-        );
-
-        //Fetch conversation command if it exists and execute it
-        if ($conversation->exists() && ($command = $conversation->getCommand())) {
-            return $this->telegram->executeCommand($command);
-        }
-
-        return Request::emptyResponse();*/
     }
 }

@@ -16,6 +16,12 @@ $ViewList['list'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['operators'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['index'] = array(
     'params' => array(),
     'uparams' => array(),
@@ -40,6 +46,12 @@ $ViewList['editsignature'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['editdepartments'] = array(
+    'params' => array('id'),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['editsignatureglobal'] = array(
     'params' => array('id'),
     'uparams' => array('action','itemid','status'),
@@ -52,6 +64,18 @@ $ViewList['deletesignature'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['deleteoperator'] = array(
+    'params' => array('id'),
+    'uparams' => array('csfr'),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['editoperator'] = array(
+    'params' => array('id'),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['signatures'] = array(
     'params' => array(),
     'uparams' => array(),
@@ -59,6 +83,12 @@ $ViewList['signatures'] = array(
 );
 
 $ViewList['newsignature'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['newoperator'] = array(
     'params' => array(),
     'uparams' => array(),
     'functions' => array('use_admin'),

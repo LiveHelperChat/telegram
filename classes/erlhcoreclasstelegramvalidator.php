@@ -99,4 +99,67 @@ class erLhcoreClassTelegramValidator
         return $Errors;
     }
 
+    public static function validateDepartments(erLhcoreClassModelTelegramBot & $item)
+    {
+        $definition = array(
+            'bot_client' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
+            'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
+        );
+
+        $form = new ezcInputForm(INPUT_POST, $definition);
+
+        if ($form->hasValidData('bot_client') && $form->bot_client == true) {
+            $item->bot_client = 1;
+        } else {
+            $item->bot_client = 0;
+        }
+
+        $db = ezcDbInstance::get();
+        $stmt = $db->prepare('DELETE FROM lhc_telegram_bot_dep WHERE bot_id = :bot_id');
+        $stmt->bindValue(':bot_id', $item->id, PDO::PARAM_STR);
+        $stmt->execute();
+
+        if ($form->hasValidData('dep') && !empty($form->dep)) {
+            foreach ($form->dep as $depId) {
+                $botDep = new erLhcoreClassModelTelegramBotDep();
+                $botDep->dep_id = $depId;
+                $botDep->bot_id = $item->id;
+                $botDep->saveThis();
+            }
+        }
+    }
+
+    public static function validateOperator(erLhcoreClassModelTelegramOperator & $item)
+    {
+        $definition = array(
+            'user_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)),
+            'bot_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)),
+            'confirmed' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean'),
+        );
+
+        $Errors = array();
+        $form = new ezcInputForm(INPUT_POST, $definition);
+
+        if ($form->hasValidData('user_id')) {
+            $item->user_id = $form->user_id;
+        } else {
+            $Errors[] = 'Please choose a user!';
+        }
+
+        if ($form->hasValidData('bot_id')) {
+            $item->bot_id = $form->bot_id;
+        } else {
+            $Errors[] = 'Please choose a bot!';
+        }
+
+        if ($form->hasValidData('confirmed') && $form->confirmed == 1) {
+            $item->confirmed = 1;
+        } else {
+            $item->confirmed = 0;
+        }
+
+        return $Errors;
+    }
 }

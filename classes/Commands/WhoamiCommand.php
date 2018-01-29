@@ -17,6 +17,7 @@ use Longman\TelegramBot\Entities\File;
 use Longman\TelegramBot\Entities\PhotoSize;
 use Longman\TelegramBot\Entities\UserProfilePhotos;
 use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Entities\InlineKeyboard;
 
 /**
  * User "/whoami" command
@@ -127,6 +128,28 @@ class WhoamiCommand extends UserCommand
 
         //No Photo just send text
         $data['text'] = $caption;
+
+        $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+        $tBot = $telegramExt->getBot();
+
+        $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tchat_id' => $chat_id, 'confirmed' => 1, 'bot_id' => $tBot->id)));
+
+        if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
+            if ($operator->user->hide_online == 0) {
+                $inlineKeyboards[] = ['text' => "Go offline", 'callback_data' => 'go_offline'];
+            } else {
+                $inlineKeyboards[] = ['text' => "Go online", 'callback_data' => 'go_online'];
+            }
+
+            $inlineKeyboard = new InlineKeyboard($inlineKeyboards);
+            $data['reply_markup'] = $inlineKeyboard;
+            $data['text'] .=  PHP_EOL . 'Status: ' . ($operator->user->hide_online == 0 ? 'Online' : 'Offline');
+            $data['text'] .=  PHP_EOL . 'Associated operator: [' . $operator->user_id . '] ' . ($operator->user);
+            $data['text'] .=  PHP_EOL . 'Bot as client: ' . ($tBot->bot_client == 1 ? 'Yes (you will receive new chat requests)' : 'No (you will NOT receive new chat requests)');
+
+        } else {
+            $data['text'] .=  PHP_EOL . "You are not registered within Live Helper Chat. Please register. See /register";
+        }
 
         return Request::sendMessage($data);
     }

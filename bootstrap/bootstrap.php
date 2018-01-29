@@ -41,17 +41,116 @@ class erLhcoreClassExtensionLhctelegram {
 		    $this,
 		    'instanceCreated'
 		));
-		
-		$dispatcher->listen('instance.destroyed', array(
-		    $this,
-		    'instanceDestroyed'
-		));
 
 		$dispatcher->listen('telegram.get_signature', array(
 		    $this,
 		    'getSignature'
 		));
+
+		$dispatcher->listen('chat.chat_started', array(
+		    $this,
+		    'chatStarted'
+		));
+
+		$dispatcher->listen('chat.web_add_msg_admin', array(
+		    $this,
+		    'messageAdded'
+		));
+
+		$dispatcher->listen('chat.addmsguser', array(
+		    $this,
+		    'messageAdded'
+		));
 	}
+
+    /**
+     * Checks automated hosting structure
+     *
+     * This part is executed once in manager is run this cronjob.
+     * php cron.php -s site_admin -e instance -c cron/extensions_update
+     *
+     * */
+    public function checkStructure()
+    {
+        erLhcoreClassUpdate::doTablesUpdate(json_decode(file_get_contents('extension/lhctelegram/doc/structure.json'), true));
+    }
+
+    /**
+     * Used only in automated hosting enviroment
+     */
+    public function instanceCreated($params)
+    {
+        try {
+            // Just do table updates
+            erLhcoreClassUpdate::doTablesUpdate(json_decode(file_get_contents('extension/lhctelegram/doc/structure.json'), true));
+        } catch (Exception $e) {
+            erLhcoreClassLog::write(print_r($e, true));
+        }
+    }
+
+	public function messageAdded($params)
+    {
+        $chat = $params['chat'];
+
+        $variablesArray = $chat->chat_variables_array;
+
+        if (isset($variablesArray['telegram_chat_op']) && is_numeric($variablesArray['telegram_chat_op'])) {
+            $operator = erLhcoreClassModelTelegramOperator::fetch($variablesArray['telegram_chat_op']);
+
+            if ($operator instanceof erLhcoreClassModelTelegramOperator && $operator->confirmed == 1) {
+
+                $telegram = new Longman\TelegramBot\Telegram($operator->bot->bot_api, $operator->bot->bot_username);
+
+                $data = [
+                    'chat_id' => $operator->tchat_id,
+                    'text'    => trim($params['msg']->name_support . ' ' . $params['msg']->msg)
+                ];
+
+                if ($operator->chat_id != $chat->id) {
+                    $inlineKeyboards = array();
+                    $inlineKeyboards[] = ['text' => "Reply to [{$chat->id}] $chat->nick", 'callback_data' => 'switch_chat||' . $chat->id];
+                    $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard($inlineKeyboards);
+                    $data['reply_markup'] = $inline_keyboard;
+                }
+
+                Longman\TelegramBot\Request::sendMessage($data);
+            }
+        }
+    }
+
+	public function chatStarted($params)
+    {
+        $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
+
+        foreach ($bots as $bot){
+            if ($bot->bot instanceof erLhcoreClassModelTelegramBot && $bot->bot->bot_client == 1) {
+                $operators = erLhcoreClassModelTelegramOperator::getList(array('filter' => array('bot_id' => $bot->bot->id)));
+                foreach ($operators as $operator) {
+                    if ($operator->user->hide_online == 0) {
+                        // Set internal variables
+                        $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
+
+                        $visitor = array();
+                        $visitor[] = 'New chat, ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
+                        $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
+
+                        $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard([
+                            ['text' => 'Accept Chat', 'callback_data' => 'accept_chat||' . $params['chat']->id]
+                        ]);
+
+                        $data = [
+                            'chat_id' => $operator->tchat_id,
+                            'parse_mode' => 'MARKDOWN',
+                            'text'    => implode("\n", $visitor),
+                            'reply_markup' => $inline_keyboard,
+                        ];
+
+                        Longman\TelegramBot\Request::sendMessage($data);
+                    }
+                }
+            }
+        }
+    }
 
 	public function registerAutoload() {
 		spl_autoload_register ( array (
@@ -63,6 +162,8 @@ class erLhcoreClassExtensionLhctelegram {
 	public function autoload($className) {
 		$classesArray = array (
 				'erLhcoreClassModelTelegramBot'         => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegrambot.php',
+				'erLhcoreClassModelTelegramBotDep'      => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegrambotdep.php',
+				'erLhcoreClassModelTelegramOperator'    => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramoperator.php',
 				'erLhcoreClassModelTelegramChat'        => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramchat.php',
 				'erLhcoreClassModelTelegramSignature'   => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramsignature.php',
 				'erLhcoreClassTelegramValidator'        => 'extension/lhctelegram/classes/erlhcoreclasstelegramvalidator.php'

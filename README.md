@@ -26,3 +26,7 @@ cd extension/lhctelegram && composer.phar update
 8. Create bot in LHC back office.
 9. After creating bot, go back and just click. "Set webhook"
 10. That's it.
+
+## Bot as client gateway
+This allows to use bot as gateway between normal chats on your page and bot chatting with you as a operator. In other words you can use Telegram mobile and desktop clients as Live Helper Chat clients to support your visitors.
+
