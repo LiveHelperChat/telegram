@@ -35,3 +35,5 @@ This allows to use bot as gateway between normal chats on your page and bot chat
 3. Now go to back office main telegram page and choose "Telegram operators". Choose Operator and Bot.
 4. Now start conversation and register yourself within bot by typing /register <id> id should be registered operator id. Very first column in operators list.
 5. That's all. Just type /help to see what available commands are supported.
+    
+https://livehelperchat.com/how-to-use-telegram-if-you-are-automated-hosting-client-489a.html
