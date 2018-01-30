@@ -103,7 +103,7 @@ class erLhcoreClassExtensionLhctelegram {
 
                 $data = [
                     'chat_id' => $operator->tchat_id,
-                    'text'    => trim($params['msg']->name_support . ' ' . $params['msg']->msg)
+                    'text'    => trim( ($params['msg']->user_id == 0 ? $params['chat']->nick . ': ' : '') . ($params['msg']->name_support . ' ' . $params['msg']->msg))
                 ];
 
                 if ($operator->chat_id != $chat->id) {
@@ -122,11 +122,15 @@ class erLhcoreClassExtensionLhctelegram {
     {
         $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
 
-        foreach ($bots as $bot){
+        foreach ($bots as $bot) {
             if ($bot->bot instanceof erLhcoreClassModelTelegramBot && $bot->bot->bot_client == 1) {
                 $operators = erLhcoreClassModelTelegramOperator::getList(array('filter' => array('bot_id' => $bot->bot->id)));
                 foreach ($operators as $operator) {
                     if ($operator->user->hide_online == 0) {
+
+                        $cfgSite = erConfigClassLhConfig::getInstance();
+                        $secretHash = $cfgSite->getSetting( 'site', 'secrethash' );
+
                         // Set internal variables
                         $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
 
@@ -134,8 +138,13 @@ class erLhcoreClassExtensionLhctelegram {
                         $visitor[] = 'New chat, ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
                         $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
 
+                        $receiver = $operator->user->email;
+                        $verifyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
+                        $url = (erLhcoreClassSystem::$httpsMode ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('chat/accept').'/'.erLhcoreClassModelChatAccept::generateAcceptLink($params['chat']).'/'.$verifyEmail.'/'.$receiver;
+
                         $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard([
-                            ['text' => 'Accept Chat', 'callback_data' => 'accept_chat||' . $params['chat']->id]
+                            ['text' => 'Accept Chat', 'callback_data' => 'accept_chat||' . $params['chat']->id],
+                            ['text' => 'Open url', 'url' => $url],
                         ]);
 
                         $data = [

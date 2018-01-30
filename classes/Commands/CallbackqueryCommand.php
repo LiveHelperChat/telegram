@@ -157,36 +157,41 @@ class CallbackqueryCommand extends SystemCommand
                 return Request::sendMessage($data);
             }
 
-
         } else if ($paramsCallback[0] == 'accept_chat') {
 
             $chat = \erLhcoreClassModelChat::fetch($paramsCallback[1]);
 
-            if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
+            $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('bot_id' => $tBot->id, 'confirmed' => 1, 'tuser_id' => $callback_query->getFrom()->getId())));
+
+            if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT || ($chat->status == \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT && $operator instanceof \erLhcoreClassModelTelegramOperator && $operator->user_id == $chat->user_id)) {
+
+                $wasPending = $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT;
+
                 $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
 
                 if ($chat->wait_time == 0) {
                     $chat->wait_time = time() - $chat->time;
                 }
 
-                $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('bot_id' => $tBot->id, 'confirmed' => 1, 'tuser_id' => $callback_query->getFrom()->getId())));
-
                 if ($operator instanceof \erLhcoreClassModelTelegramOperator)
                 {
                     $chat->user_id = $operator->user_id;
 
-                    // User status in event of chat acceptance
-                    $chat->usaccept = $operator->user->hide_online;
+                    if ($wasPending == true){
+                        // User status in event of chat acceptance
+                        $chat->usaccept = $operator->user->hide_online;
 
-                    $msg = new \erLhcoreClassModelmsg();
-                    $msg->msg = (string)$operator->user->name_support.' '.\erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','has accepted the chat!');
-                    $msg->chat_id = $chat->id;
-                    $msg->user_id = -1;
-                    $msg->time = time();
+                        $msg = new \erLhcoreClassModelmsg();
+                        $msg->msg = (string)$operator->user->name_support.' '.\erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','has accepted the chat!');
+                        $msg->chat_id = $chat->id;
+                        $msg->user_id = -1;
+                        $msg->time = time();
 
-                    \erLhcoreClassChat::getSession()->save($msg);
+                        \erLhcoreClassChat::getSession()->save($msg);
 
-                    $chat->last_msg_id = $msg->id;
+                        $chat->last_msg_id = $msg->id;
+                    }
+
                     $chat->support_informed = 1;
                     $chat->has_unread_messages = 0;
                     $chat->unread_messages_informed = 0;
