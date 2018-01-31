@@ -69,6 +69,8 @@ try {
     erLhcoreClassLog::write($e->getMessage());
 } catch (Longman\TelegramBot\Exception\TelegramLogException $e) {
     erLhcoreClassLog::write($e->getMessage());
+} catch (Exception $e) {
+    erLhcoreClassLog::write($e->getMessage());
 }
 
 exit;
