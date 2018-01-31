@@ -57,11 +57,18 @@ class erLhcoreClassExtensionLhctelegram {
 		    'messageAdded'
 		));
 
+		$dispatcher->listen('chat.messages_added_fb', array(
+		    $this,
+		    'messageAdded'
+		));
+
 		$dispatcher->listen('chat.addmsguser', array(
 		    $this,
 		    'messageAdded'
 		));
+
 	}
+
 
     /**
      * Checks automated hosting structure

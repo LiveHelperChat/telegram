@@ -284,7 +284,8 @@ class GenericmessageCommand extends SystemCommand
                             // This allows NodeJS users to know about new message. In this particular case it's admin users
                             // If operator has opened chat instantly sync
                             \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.messages_added_passive', array(
-                                'chat' => & $chat
+                                'chat' => & $chat,
+                                'msg' => & $msg
                             ));
 
                             // If operator has closed a chat we need force back office sync
@@ -293,7 +294,10 @@ class GenericmessageCommand extends SystemCommand
                             ));
 
                             // General module signal that it has received an sms
-                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received', array('chat' => & $chat));
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received', array(
+                                'chat' => & $chat,
+                                'msg' => & $msg
+                            ));
 
                             if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
                                 $data = [
@@ -400,16 +404,21 @@ class GenericmessageCommand extends SystemCommand
                 // This allows NodeJS users to know about new message. In this particular case it's admin users
                 // If operator has opened chat instantly sync
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.messages_added_passive', array(
-                    'chat' => & $chat
+                    'chat' => & $chat,
+                    'msg' => $msg
                 ));
 
                 // If operator has closed a chat we need force back office sync
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
-                    'chat' => & $chat
+                    'chat' => & $chat,
+                    'msg' => $msg
                 ));
 
                 // General module signal that it has received an sms
-                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array(
+                    'chat' => & $chat,
+                    'msg' => $msg
+                ));
 
             } else {
                 $chat = new \erLhcoreClassModelChat();
@@ -489,11 +498,14 @@ class GenericmessageCommand extends SystemCommand
                  * Execute standard callback as chat was started
                  */
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array(
-                    'chat' => & $chat
+                    'chat' => & $chat,
+                    'msg' => $msg
                 ));
 
                 // General module signal that it has received an sms
-                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array('chat' => & $chat));
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array(
+                    'chat' => & $chat,
+                    'msg' => $msg));
             }
         }
         
