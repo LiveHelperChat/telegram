@@ -229,7 +229,14 @@
                 "extra": ""
             }
         ]
-    },  
+    },
+    "tables_collation" : {
+        "lhc_telegram_chat" : "utf8mb4_general_ci",
+        "lhc_telegram_bot" : "utf8mb4_general_ci",
+        "lhc_telegram_signature" : "utf8mb4_general_ci",
+        "lhc_telegram_operator" : "utf8mb4_general_ci",
+        "lhc_telegram_bot_dep" : "utf8mb4_general_ci"
+    },
     "tables_data": {    },
     "tables_data_identifier": {    },
     "tables_indexes" : {    },
