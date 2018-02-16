@@ -272,6 +272,7 @@ class GenericmessageCommand extends SystemCommand
                             if ($operator->user->invisible_mode == 0) { // Change status only if it's not internal command
                                 if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
+                                    $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                                     $chat->user_id = $operator->user_id;
                                 }
                             }
@@ -379,21 +380,24 @@ class GenericmessageCommand extends SystemCommand
                 $chat_status_sub_sub = $chat->status_sub_sub;
                 $chat_status = $chat->status;
                 $has_unread_messages = 1;
+                $pnd_time = $chat->pnd_time;
 
                 if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
                     $chat_status = \erLhcoreClassModelChat::STATUS_PENDING_CHAT;
                     $chat_status_sub_sub = 2; // Will be used to indicate that we have to show notification for this chat if it appears on list
                     $chat_user_id = 0;
                     $has_unread_messages = 0;
+                    $pnd_time = time();
                 }
 
-                $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = :has_unread_messages, user_id = :user_id, status = :status, status_sub_sub = :status_sub_sub WHERE id = :id');
+                $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = :has_unread_messages, user_id = :user_id, pnd_time = :pnd_time, status = :status, status_sub_sub = :status_sub_sub WHERE id = :id');
                 $stmt->bindValue(':id', $chat->id, \PDO::PARAM_INT);
                 $stmt->bindValue(':last_user_msg_time', $msg->time, \PDO::PARAM_INT);
                 $stmt->bindValue(':user_id', $chat_user_id, \PDO::PARAM_INT);
                 $stmt->bindValue(':status', $chat_status, \PDO::PARAM_INT);
                 $stmt->bindValue(':status_sub_sub', $chat_status_sub_sub, \PDO::PARAM_INT);
                 $stmt->bindValue(':has_unread_messages', $has_unread_messages, \PDO::PARAM_INT);
+                $stmt->bindValue(':pnd_time', $pnd_time, \PDO::PARAM_INT);
 
                 // Set last message ID
                 if ($chat->last_msg_id < $msg->id) {
@@ -452,7 +456,7 @@ class GenericmessageCommand extends SystemCommand
                 $from = $message->getProperty('from');
 
                 $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
-                $chat->time = time();
+                $chat->pnd_time = $chat->time = time();
                 $chat->status = 0;
                 $chat->hash = \erLhcoreClassChat::generateHash();
                 $chat->referrer = '';
