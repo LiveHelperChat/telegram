@@ -79,7 +79,7 @@ class erLhcoreClassModelTelegramBot
 
     public $webhook_set = 0;
     
-    public $chat_timeout = 3600*72;
+    public $chat_timeout = 259200;
 }
 
 ?>
