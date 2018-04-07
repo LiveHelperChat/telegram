@@ -346,7 +346,33 @@ class GenericmessageCommand extends SystemCommand
                 )
             ));
 
-            if ($tChat !== false && ($chat = $tChat->chat) !== false ) {
+            if (!($tChat instanceof \erLhcoreClassModelTelegramChat)) {
+                $tChat = new \erLhcoreClassModelTelegramChat();
+            }
+
+            $chat = $tChat->chat;
+
+            // fix https://github.com/LiveHelperChat/fbmessenger/issues/1
+            if ($chat instanceof \erLhcoreClassModelChat && $chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
+                $tOptions = \erLhcoreClassModelChatConfig::fetch('telegram_options');
+                $data = (array)$tOptions->data;
+                if (!isset($data['new_chat']) || $data['new_chat'] == false)
+                {
+                    if (isset($data['priority']) && $data['priority'] != '' && $data['priority'] != 0) {
+                        $chat->priority = isset($data['priority']) ? (int)$data['priority'] : 0;
+                    }
+
+                    $chat->status = \erLhcoreClassModelChat::STATUS_PENDING_CHAT;
+                    $chat->status_sub_sub = 2; // Will be used to indicate that we have to show notification for this chat if it appears on list
+                    $chat->user_id = 0; // fix https://github.com/LiveHelperChat/fbmessenger/issues/6
+                    $chat->pnd_time = time();
+                    $chat->saveThis();
+                } else {
+                    $chat = null;
+                }
+            }
+
+            if ($chat instanceof \erLhcoreClassModelChat) {
 
                 if ($type === 'photo') {
                     $text = $this->processPhoto($chat, $message, $tBot);
@@ -443,17 +469,41 @@ class GenericmessageCommand extends SystemCommand
             } else {
                 $chat = new \erLhcoreClassModelChat();
 
+                $tOptions = \erLhcoreClassModelChatConfig::fetch('telegram_options');
+                $data = (array)$tOptions->data;
+
                 $depId = $tBot->dep_id;
                 $department = \erLhcoreClassModelDepartament::fetch($depId);
 
                 if ($department instanceof \erLhcoreClassModelDepartament) {
                     $chat->dep_id = $department->id;
-                    $chat->priority = $department->priority;
                 } else {
                     throw new Exception('Could not find department by bot - ' . $tBot->id);
                 }
 
+                if (isset($data['priority']) && $data['priority'] != '' && $data['priority'] != 0) {
+                    $chat->priority = isset($data['priority']) ? (int)$data['priority'] : $department->priority;
+                } else {
+                    $chat->priority = $department->priority;
+                }
+
                 $from = $message->getProperty('from');
+
+                $lead = \erLhcoreClassModelTelegramLead::findOne(array('filter' => array('tchat_id' => $chat_id)));
+
+                if (!($lead instanceof \erLhcoreClassModelTelegramLead)) {
+                    $lead = new \erLhcoreClassModelTelegramLead();
+                    $lead->language_code = isset($from['language_code']) ? $from['language_code'] : '';
+                    $lead->first_name = isset($from['first_name']) ? $from['first_name'] : '';
+                    $lead->last_name = isset($from['last_name']) ? $from['last_name'] : '';
+                    $lead->utime = time();
+                    $lead->ctime = time();
+                    $lead->tchat_id = $chat_id;
+                    $lead->tbot_id = $tBot->id;
+                    $lead->dep_id = $chat->dep_id;
+                    $lead->username = isset($from['username']) ? $from['username'] : '';
+                    $lead->saveThis();
+                }
 
                 $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
                 $chat->pnd_time = $chat->time = time();
@@ -499,7 +549,6 @@ class GenericmessageCommand extends SystemCommand
                 /**
                  * Save telegram chat
                  */
-                $tChat = new \erLhcoreClassModelTelegramChat();
                 $tChat->bot_id = $tBot->id;
                 $tChat->tchat_id = $chat_id;
                 $tChat->chat_id = $chat->id;
@@ -509,7 +558,9 @@ class GenericmessageCommand extends SystemCommand
 
                 $chat->chat_variables = json_encode(array(
                     'tchat' => true,
-                    'tchat_id' => $tChat->id
+                    'tchat_id' => $tChat->id,
+                    'tchat_raw_id' => $chat_id,
+                    'tbot_id' => $tChat->bot_id,
                 ));
 
                 $chat->saveThis();

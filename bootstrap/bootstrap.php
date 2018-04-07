@@ -67,8 +67,95 @@ class erLhcoreClassExtensionLhctelegram {
 		    'messageAdded'
 		));
 
+        $dispatcher->listen('chat.workflow.autoassign', array(
+            $this,
+            'autoAssignBlock'
+        ));
+
+        // Elastic Search
+        $dispatcher->listen('system.getelasticstructure', array(
+                $this,'getElasticStructure')
+        );
+
+        $dispatcher->listen('elasticsearch.indexchat', array(
+                $this,'indexChat')
+        );
+
+        $dispatcher->listen('elasticsearch.getstate', array(
+                $this,'getState')
+        );
+
+        $dispatcher->listen('elasticsearch.getpreviouschats', array(
+                $this, 'getPreviousChatsFilter')
+        );
+
 	}
 
+    /**
+     *
+     * If user disabled auto assign for timed out assign wrofklows
+     *
+     * @param array $params
+     */
+    public function autoAssignBlock($params) {
+        if (isset($params['chat']) && isset($params['params']['auto_assign_timeout']) && $params['params']['auto_assign_timeout'] == true) {
+            $chatVariables = $params['chat']->chat_variables_array;
+            if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1)
+            {
+                $tOptions = erLhcoreClassModelChatConfig::fetch('telegram_options');
+                $data = (array)$tOptions->data;
+                if (isset($data['exclude_workflow']) && $data['exclude_workflow'] == true)
+                {
+                    return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'user_id' => 0); // Do nothing if it was executed
+                }
+            }
+        }
+    }
+
+    public function getPreviousChatsFilter($params)
+    {
+        $chatVariables = json_decode($params['chat']->chat_variables,true);
+
+        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1 && isset($chatVariables['tchat_raw_id']) && is_numeric($chatVariables['tchat_raw_id']))
+        {
+            $params['sparams']['body']['query']['bool']['must'][]['term']['tchat_raw_id'] = (int)$chatVariables['tchat_raw_id'];
+        }
+    }
+
+    // Get elastic structure
+    public function getElasticStructure($params)
+    {
+        $params['structure'][(isset($params['index_new']) ? $params['index_new'] : 'chat')]['types']['lh_chat']['tchat_raw_id'] = array('type' => 'long');
+        $params['structure'][(isset($params['index_new']) ? $params['index_new'] : 'chat')]['types']['lh_chat']['tbot_id'] = array('type' => 'long');
+    }
+
+
+    // Index chat
+    public function indexChat($params)
+    {
+        $chatVariables = json_decode($params['chat']->chat_variables,true);
+
+        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1 && isset($chatVariables['tchat_raw_id']) && isset($chatVariables['tchat_raw_id']))
+        {
+            $params['chat']->tchat_raw_id = $chatVariables['tchat_raw_id'];
+            $params['chat']->tbot_id = isset($chatVariables['tbot_id']) ? $chatVariables['tbot_id'] : 0;
+        }
+    }
+
+    public function getState($params)
+    {
+        if (isset($params['chat']->tchat_raw_id) && is_numeric($params['chat']->tchat_raw_id)) {
+            $params['state']['tchat_raw_id'] = $params['chat']->tchat_raw_id;
+        } else {
+            $params['state']['tchat_raw_id'] = 0;
+        }
+
+        if (isset($params['chat']->tbot_id) && is_numeric($params['chat']->tbot_id)) {
+            $params['state']['tbot_id'] = $params['chat']->tbot_id;
+        } else {
+            $params['state']['tbot_id'] = 0;
+        }
+    }
 
     /**
      * Checks automated hosting structure
@@ -182,6 +269,7 @@ class erLhcoreClassExtensionLhctelegram {
 				'erLhcoreClassModelTelegramOperator'    => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramoperator.php',
 				'erLhcoreClassModelTelegramChat'        => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramchat.php',
 				'erLhcoreClassModelTelegramSignature'   => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramsignature.php',
+				'erLhcoreClassModelTelegramLead'        => 'extension/lhctelegram/classes/erlhcoreclassmodeltelegramlead.php',
 				'erLhcoreClassTelegramValidator'        => 'extension/lhctelegram/classes/erlhcoreclasstelegramvalidator.php'
 		);
 		

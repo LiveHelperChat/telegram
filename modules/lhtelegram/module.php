@@ -100,9 +100,21 @@ $ViewList['setwebhook'] = array(
     'functions' => array('use_admin'),
 );
 
+$ViewList['options'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array('use_admin'),
+);
+
 $ViewList['delete'] = array(
     'params' => array('id'),
     'uparams' => array('csfr'),
+    'functions' => array('use_admin'),
+);
+
+$ViewList['leads'] = array(
+    'params' => array(),
+    'uparams' => array(),
     'functions' => array('use_admin'),
 );
 
