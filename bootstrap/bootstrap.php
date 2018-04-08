@@ -89,7 +89,94 @@ class erLhcoreClassExtensionLhctelegram {
                 $this, 'getPreviousChatsFilter')
         );
 
+        // Handle canned messages custom workflow
+        $dispatcher->listen('chat.canned_msg_before_save', array(
+                $this, 'cannedMessageValidate')
+        );
+
+        $dispatcher->listen('chat.workflow.canned_message_replace', array(
+                $this, 'cannedMessageReplace')
+        );
 	}
+
+    public function cannedMessageReplace($params)
+    {
+        $chatVariables = $params['chat']->chat_variables_array;
+
+        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1)
+        {
+            foreach ($params['items'] as & $item) {
+
+                if ($params['chat']->locale != '' && $item->languages != '') {
+                    // Override language by chat locale
+                    $languages = json_decode($item->languages, true);
+
+                    if (is_array($languages)) {
+                        foreach ($languages as & $lang) {
+
+                            if (isset($lang['message_lang_tel']) && !empty($lang['message_lang_tel'])) {
+                                $lang['message'] = $lang['message_lang_tel'];
+                            }
+
+                            if (isset($lang['fallback_message_lang_tel']) && !empty($lang['fallback_message_lang_tel'])) {
+                                $lang['fallback_msg'] = $lang['fallback_message_lang_tel'];
+                            }
+                        }
+                    }
+
+                    $item->languages = json_encode($languages);
+                }
+
+                $additionalData = $item->additional_data_array;
+
+                if (isset($additionalData['message_tel']) && !empty($additionalData['message_tel'])) {
+                    $item->msg = $additionalData['message_tel'];
+                }
+
+                if (isset($additionalData['fallback_tel']) && !empty($additionalData['fallback_tel'])) {
+                    $item->fallback_msg = $additionalData['fallback_tel'];
+                }
+            }
+        }
+    }
+
+    public function cannedMessageValidate($params)
+    {
+        $definition = array(
+            'MessageExtTel' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'),
+            'FallbackMessageExtTel' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'),
+
+            'message_lang_tel' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw',null,FILTER_REQUIRE_ARRAY),
+            'fallback_message_lang_tel' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw',null,FILTER_REQUIRE_ARRAY)
+        );
+
+        $form = new ezcInputForm( INPUT_POST, $definition );
+
+        $langArray = array();
+        foreach ($params['msg']->languages_array as $index => $langData) {
+            $langData['message_lang_tel'] = $form->message_lang_tel[$index];
+            $langData['fallback_message_lang_tel'] = $form->fallback_message_lang_tel[$index];
+            $langArray[] = $langData;
+        }
+
+        $params['msg']->languages = json_encode($langArray);
+        $params['msg']->languages_array = $langArray;
+
+        // Store additional data
+        $additionalArray =  $params['msg']->additional_data_array;
+
+        if ( $form->hasValidData( 'MessageExtTel' )) {
+            $additionalArray['message_tel'] = $form->MessageExtTel;
+        }
+
+        if ( $form->hasValidData( 'FallbackMessageExtTel' ) )
+        {
+            $additionalArray['fallback_tel'] = $form->FallbackMessageExtTel;
+        }
+
+        $params['msg']->additional_data = json_encode($additionalArray);
+        $params['msg']->additional_data_array = $additionalArray;
+    }
 
     /**
      *
