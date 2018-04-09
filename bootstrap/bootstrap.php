@@ -94,6 +94,10 @@ class erLhcoreClassExtensionLhctelegram {
                 $this, 'cannedMessageValidate')
         );
 
+        $dispatcher->listen('chat.before_newcannedmsg', array(
+                $this, 'cannedMessageValidate')
+        );
+
         $dispatcher->listen('chat.workflow.canned_message_replace', array(
                 $this, 'cannedMessageReplace')
         );
