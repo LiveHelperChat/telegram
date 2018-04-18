@@ -16,6 +16,11 @@ class erLhcoreClassExtensionLhctelegram {
 		    $this,
 		    'sendMessageToTelegram'
 		));
+
+		$dispatcher->listen('chat.auto_preload', array(
+		    $this,
+		    'autoPreload'
+		));
 		
 		$dispatcher->listen('chat.desktop_client_admin_msg', array(
 		    $this,
@@ -102,6 +107,17 @@ class erLhcoreClassExtensionLhctelegram {
                 $this, 'cannedMessageReplace')
         );
 	}
+
+	// Always auto preload telegram chats
+	public function autoPreload($params) {
+
+        $chatVariables = $params['chat']->chat_variables_array;
+
+        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1)
+        {
+            $params['load_previous'] = 1;
+        }
+    }
 
     public function cannedMessageReplace($params)
     {
