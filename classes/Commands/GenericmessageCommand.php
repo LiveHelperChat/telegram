@@ -352,6 +352,7 @@ class GenericmessageCommand extends SystemCommand
             }
 
             $chat = $tChat->chat;
+            $renotify = false;
 
             // fix https://github.com/LiveHelperChat/fbmessenger/issues/1
             if ($chat instanceof \erLhcoreClassModelChat && $chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
@@ -368,6 +369,8 @@ class GenericmessageCommand extends SystemCommand
                     $chat->user_id = 0; // fix https://github.com/LiveHelperChat/fbmessenger/issues/6
                     $chat->pnd_time = time();
                     $chat->saveThis();
+                    $renotify = true;
+
                 } else {
                     $chat = null;
                 }
@@ -467,6 +470,14 @@ class GenericmessageCommand extends SystemCommand
                     'msg' => $msg,
                     'sender' => 'bot_visitor'
                 ));
+
+                if ($renotify == true) {
+                    // General module signal that it has received an sms
+                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.renotify',array(
+                        'chat' => & $chat,
+                        'msg' => $msg,
+                     ));
+                }
 
             } else {
                 $chat = new \erLhcoreClassModelChat();

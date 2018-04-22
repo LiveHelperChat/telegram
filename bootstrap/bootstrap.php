@@ -57,6 +57,11 @@ class erLhcoreClassExtensionLhctelegram {
 		    'chatStarted'
 		));
 
+		$dispatcher->listen('telegram.renotify', array(
+		    $this,
+		    'chatStarted'
+		));
+
 		$dispatcher->listen('chat.web_add_msg_admin', array(
 		    $this,
 		    'messageAdded'
