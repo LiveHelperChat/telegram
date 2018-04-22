@@ -297,7 +297,8 @@ class GenericmessageCommand extends SystemCommand
                             // General module signal that it has received an sms
                             \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received', array(
                                 'chat' => & $chat,
-                                'msg' => & $msg
+                                'msg' => & $msg,
+                                'sender' => 'bot_client'
                             ));
 
                             if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
@@ -463,7 +464,8 @@ class GenericmessageCommand extends SystemCommand
                 // General module signal that it has received an sms
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array(
                     'chat' => & $chat,
-                    'msg' => $msg
+                    'msg' => $msg,
+                    'sender' => 'bot_visitor'
                 ));
 
             } else {
@@ -576,7 +578,9 @@ class GenericmessageCommand extends SystemCommand
                 // General module signal that it has received an sms
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array(
                     'chat' => & $chat,
-                    'msg' => $msg));
+                    'msg' => $msg,
+                    'sender' => 'bot_visitor'
+                ));
             }
         }
         

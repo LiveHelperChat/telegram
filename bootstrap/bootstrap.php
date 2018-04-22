@@ -72,6 +72,11 @@ class erLhcoreClassExtensionLhctelegram {
 		    'messageAdded'
 		));
 
+		$dispatcher->listen('telegram.msg_received', array(
+		    $this,
+		    'messageAdded'
+		));
+
         $dispatcher->listen('chat.workflow.autoassign', array(
             $this,
             'autoAssignBlock'
@@ -296,25 +301,33 @@ class erLhcoreClassExtensionLhctelegram {
         $variablesArray = $chat->chat_variables_array;
 
         if (isset($variablesArray['telegram_chat_op']) && is_numeric($variablesArray['telegram_chat_op'])) {
+
             $operator = erLhcoreClassModelTelegramOperator::fetch($variablesArray['telegram_chat_op']);
 
             if ($operator instanceof erLhcoreClassModelTelegramOperator && $operator->confirmed == 1) {
+                if (!isset($params['sender']) || $params['sender'] == 'bot_visitor')
+                {
+                    $telegram = new Longman\TelegramBot\Telegram($operator->bot->bot_api, $operator->bot->bot_username);
 
-                $telegram = new Longman\TelegramBot\Telegram($operator->bot->bot_api, $operator->bot->bot_username);
+                    $data = [
+                        'chat_id' => $operator->tchat_id,
+                        'text'    => trim( ($params['msg']->user_id == 0 ? $params['chat']->nick . ': ' : '') . ($params['msg']->name_support . ' ' . $params['msg']->msg))
+                    ];
 
-                $data = [
-                    'chat_id' => $operator->tchat_id,
-                    'text'    => trim( ($params['msg']->user_id == 0 ? $params['chat']->nick . ': ' : '') . ($params['msg']->name_support . ' ' . $params['msg']->msg))
-                ];
+                    if ($operator->chat_id != $chat->id) {
+                        $inlineKeyboards = array();
+                        $inlineKeyboards[] = ['text' => "Reply to [{$chat->id}] $chat->nick", 'callback_data' => 'switch_chat||' . $chat->id];
+                        $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard($inlineKeyboards);
+                        $data['reply_markup'] = $inline_keyboard;
+                    }
 
-                if ($operator->chat_id != $chat->id) {
-                    $inlineKeyboards = array();
-                    $inlineKeyboards[] = ['text' => "Reply to [{$chat->id}] $chat->nick", 'callback_data' => 'switch_chat||' . $chat->id];
-                    $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard($inlineKeyboards);
-                    $data['reply_markup'] = $inline_keyboard;
+                    Longman\TelegramBot\Request::sendMessage($data);
+
+                } else {
+                    $params['ignore_callback'] = true;
+                    $params['telegram_user_id'] = $operator->user_id;
+                    $this->sendMessageToTelegram($params);
                 }
-
-                Longman\TelegramBot\Request::sendMessage($data);
             }
         }
     }
@@ -463,7 +476,7 @@ class erLhcoreClassExtensionLhctelegram {
                     $signatureText = '';
 
                     // General module signal that it has send an sms
-                    $statusSignature = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.get_signature',array('user_id' => erLhcoreClassUser::instance()->getUserID(), 'bot_id' => $tChat->bot_id));
+                    $statusSignature = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.get_signature',array('user_id' => (isset($params['telegram_user_id']) ? $params['telegram_user_id'] : erLhcoreClassUser::instance()->getUserID()), 'bot_id' => $tChat->bot_id));
 
                     if ($statusSignature !== false) {
                         $signatureText = $statusSignature['signature'];
@@ -495,13 +508,15 @@ class erLhcoreClassExtensionLhctelegram {
                     Longman\TelegramBot\Request::sendDocument($data);
                 }
 
-	            // General module signal that it has send an sms
-	            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_send_to_user',array('chat' => & $params['chat']));
-	            
-	            // If operator has closed a chat we need force back office sync
-	            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
-	                'chat' => & $params['chat']
-	            ));
+                if (!isset($params['ignore_callback'])) {
+                    // General module signal that it has send an sms
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_send_to_user',array('chat' => & $params['chat']));
+
+                    // If operator has closed a chat we need force back office sync
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
+                        'chat' => & $params['chat']
+                    ));
+                }
 	            
 	        } catch (Exception $e) {
 	            
