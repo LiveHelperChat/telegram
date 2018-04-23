@@ -21,6 +21,11 @@
     <div class="form-group">
         <label><input type="checkbox" value="on" name="exclude_workflow" <?php isset($t_options['exclude_workflow']) && ($t_options['exclude_workflow'] == true) ? print 'checked="checked"' : ''?> /> Exclude chats from auto assign timeout workflow.</label>
         <p><i><small>Chat's won't participate in "Chats waiting in pending queue more than n seconds should be auto-assigned first."</small></i></p>
+    </div>
+
+    <div class="form-group">
+        <label><input type="checkbox" value="on" name="chat_attr" <?php isset($t_options['chat_attr']) && ($t_options['chat_attr'] == true) ? print 'checked="checked"' : ''?> />Do not store telegram customer name and surname as chat nick</label>
+        <p><i><small>Telegram customer name and surname will be shown as chat attributes.</small></i></p>
         <br/>
     </div>
 

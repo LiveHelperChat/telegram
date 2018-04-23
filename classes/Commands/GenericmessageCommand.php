@@ -518,7 +518,43 @@ class GenericmessageCommand extends SystemCommand
                     $lead->saveThis();
                 }
 
-                $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
+                if (!isset($data['chat_attr']) || $data['chat_attr'] == 0) {
+                    $chat->nick = trim($from['first_name'] . ' ' . $from['last_name']);
+                } else {
+                    $chat->nick = 'Visitor';
+
+                    $additionalDataArray = array();
+
+                    if ($lead->first_name != '') {
+                        $additionalDataArray[] = array(
+                            'key' => 'Name',
+                            'identifier' => 'firstname',
+                            'value' => $lead->first_name,
+                        );
+                    }
+
+                    if ($lead->last_name != '') {
+                        $additionalDataArray[] = array(
+                            'key' => 'Last name',
+                            'identifier' => 'lastname',
+                            'value' => $lead->last_name,
+                        );
+                    }
+
+                    if ($lead->username != '') {
+                        $additionalDataArray[] = array(
+                            'key' => 'Telegram username',
+                            'identifier' => 'telegram_username',
+                            'value' => $lead->username,
+                        );
+                    }
+
+                    if (!empty($additionalDataArray)) {
+                        $chat->additional_data_array = $additionalDataArray;
+                        $chat->additional_data = json_encode($additionalDataArray);
+                    }
+                }
+
                 $chat->pnd_time = $chat->time = time();
                 $chat->status = 0;
                 $chat->hash = \erLhcoreClassChat::generateHash();
