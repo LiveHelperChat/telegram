@@ -473,7 +473,7 @@ class GenericmessageCommand extends SystemCommand
 
                 if ($renotify == true) {
                     // General module signal that it has received an sms
-                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.renotify',array(
+                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.restart_chat',array(
                         'chat' => & $chat,
                         'msg' => $msg,
                      ));

@@ -52,12 +52,12 @@ class erLhcoreClassExtensionLhctelegram {
 		    'getSignature'
 		));
 
-		$dispatcher->listen('chat.chat_started', array(
-		    $this,
-		    'chatStarted'
-		));
+        $dispatcher->listen('chat.restart_chat', array(
+             $this,
+             'chatStarted'
+        ));
 
-		$dispatcher->listen('telegram.renotify', array(
+		$dispatcher->listen('chat.chat_started', array(
 		    $this,
 		    'chatStarted'
 		));
@@ -81,6 +81,11 @@ class erLhcoreClassExtensionLhctelegram {
 		    $this,
 		    'messageAdded'
 		));
+
+        $dispatcher->listen('twilio.sms_received', array(
+             $this,
+            'messageAdded'
+        ));
 
         $dispatcher->listen('chat.workflow.autoassign', array(
             $this,
