@@ -352,6 +352,20 @@ class erLhcoreClassExtensionLhctelegram {
                 foreach ($operators as $operator) {
                     if ($operator->user->hide_online == 0) {
 
+                        // Do not notify if user is not assigned to department
+                        if ($operator->user->all_departments == 0 && $params['chat']->user_id != $operator->user->id) {
+
+                            $userDepartaments = erLhcoreClassUserDep::getUserDepartaments($operator->user->id);
+
+                            if (count($userDepartaments) == 0) {
+                                continue;
+                            }
+
+                            if (!in_array($params['chat']->dep_id,$userDepartaments)) {
+                                continue;
+                            }
+                        }
+
                         $cfgSite = erConfigClassLhConfig::getInstance();
                         $secretHash = $cfgSite->getSetting( 'site', 'secrethash' );
 
@@ -359,7 +373,7 @@ class erLhcoreClassExtensionLhctelegram {
                         $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
 
                         $visitor = array();
-                        $visitor[] = 'New chat, ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
+                        $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) .',  ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
                         $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
 
                         $receiver = $operator->user->email;
@@ -379,6 +393,8 @@ class erLhcoreClassExtensionLhctelegram {
                         ];
 
                         Longman\TelegramBot\Request::sendMessage($data);
+
+
                     }
                 }
             }
