@@ -109,6 +109,10 @@ class erLhcoreClassExtensionLhctelegram {
                 $this, 'getPreviousChatsFilter')
         );
 
+        $dispatcher->listen('elasticsearch.getpreviouschats_abstract', array(
+                $this, 'getPreviousChatsFilter')
+        );
+
         // Handle canned messages custom workflow
         $dispatcher->listen('chat.canned_msg_before_save', array(
                 $this, 'cannedMessageValidate')
@@ -240,7 +244,9 @@ class erLhcoreClassExtensionLhctelegram {
 
         if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1 && isset($chatVariables['tchat_raw_id']) && is_numeric($chatVariables['tchat_raw_id']))
         {
+            $params['sparams']['body']['query']['bool']['must'] = array();
             $params['sparams']['body']['query']['bool']['must'][]['term']['tchat_raw_id'] = (int)$chatVariables['tchat_raw_id'];
+            $params['sparams']['body']['query']['bool']['must'][]['range']['chat_id']['lt'] = $params['chat']->id;
         }
     }
 
