@@ -1,4 +1,5 @@
 <?php
+
 class erLhcoreClassExtensionLhctelegram {
     
 	public function __construct() {
@@ -125,7 +126,40 @@ class erLhcoreClassExtensionLhctelegram {
         $dispatcher->listen('chat.workflow.canned_message_replace', array(
                 $this, 'cannedMessageReplace')
         );
+
+        $dispatcher->listen('elasticsearch.chatsearchattr', array(
+                $this, 'appendSearchAttr')
+        );
+
+        $dispatcher->listen('elasticsearch.chatsearchexecute',array(
+                $this, 'chatSearchExecute')
+        );
 	}
+
+    public static function appendSearchAttr($params)
+    {
+        $extTel = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+
+        $params['attr']['filterAttributes'][$extTel->settings['elastic_search']['search_attr']] = array (
+            'type' => 'text',
+            'required' => false,
+            'valid_if_filled' => false,
+            'filter_type' => 'filter',
+            'filter_table_field' => $extTel->settings['elastic_search']['search_attr'],
+            'validation_definition' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int', array( 'min_range' => 1)
+            )
+        );
+    }
+
+    public static function chatSearchExecute($params)
+    {
+        $extTel = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+
+        if ($params['filter']['input_form']->{$extTel->settings['elastic_search']['search_attr']} == 1) {
+            $params['sparams']['body']['query']['bool']['must'][]['range']['tchat_raw_id']['gt'] = 0;
+        }
+    }
 
 	// Always auto preload telegram chats
 	public function autoPreload($params) {
