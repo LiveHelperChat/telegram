@@ -134,7 +134,29 @@ class erLhcoreClassExtensionLhctelegram {
         $dispatcher->listen('elasticsearch.chatsearchexecute',array(
                 $this, 'chatSearchExecute')
         );
+
+        // Bot related callbacks
+        $dispatcher->listen('chat.genericbot_set_bot',array(
+                $this, 'allowSetBot')
+        );
 	}
+
+	public static function allowSetBot($params)
+    {
+        $chat = $params['chat'];
+
+        $variablesArray = $chat->chat_variables_array;
+
+        if (isset($variablesArray['telegram_chat_op']) && is_numeric($variablesArray['telegram_chat_op'])) {
+
+            $tOptions = \erLhcoreClassModelChatConfig::fetch('telegram_options');
+            $data = (array)$tOptions->data;
+
+            if (isset($data['block_bot']) && $data['block_bot'] == 1) {
+                return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW);
+            }
+        }
+    }
 
     public static function appendSearchAttr($params)
     {

@@ -614,6 +614,8 @@ class GenericmessageCommand extends SystemCommand
 
                 $chat->saveThis();
 
+                \erLhcoreClassChatValidator::setBot($chat);
+
                 /**
                  * Execute standard callback as chat was started
                  */

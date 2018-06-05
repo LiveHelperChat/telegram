@@ -11,6 +11,9 @@ if ( isset($_POST['StoreOptions']) ) {
         'new_chat' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
         ),
+        'block_bot' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+        ),
         'exclude_workflow' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
         ),
@@ -29,6 +32,12 @@ if ( isset($_POST['StoreOptions']) ) {
         $data['new_chat'] = 1;
     } else {
         $data['new_chat'] = 0;
+    }
+
+    if ( $form->hasValidData( 'block_bot' ) && $form->block_bot == true ) {
+        $data['block_bot'] = 1;
+    } else {
+        $data['block_bot'] = 0;
     }
 
     if ( $form->hasValidData( 'exclude_workflow' ) && $form->exclude_workflow == true ) {
@@ -65,7 +74,7 @@ $Result['content'] = $tpl->fetch();
 
 $Result['path'] = array(
     array(
-        'url' => erLhcoreClassDesign::baseurl('fbmessenger/index'),
+        'url' => erLhcoreClassDesign::baseurl('telegram/index'),
         'title' => erTranslationClassLhTranslation::getInstance()->getTranslation('lhelasticsearch/module', 'Telegram')
     ),
     array(
