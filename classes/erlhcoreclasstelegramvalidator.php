@@ -14,6 +14,9 @@ class erLhcoreClassTelegramValidator
             'chat_timeout' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
+            'bot_disabled' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep_id' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
             )
@@ -32,6 +35,12 @@ class erLhcoreClassTelegramValidator
             $item->bot_api = $form->bot_api;
         } else {
             $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please enter Account SID!');
+        }
+
+        if ($form->hasValidData('bot_disabled') && $form->bot_disabled == true) {
+            $item->bot_disabled = 1;
+        } else {
+            $item->bot_disabled = 0;
         }
 
         if ($form->hasValidData('dep_id')) {

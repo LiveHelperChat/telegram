@@ -25,3 +25,7 @@
             'list_function_params'  => array(),
     )); ?>
 </div>
+
+<div class="form-group">
+    <label><input type="checkbox" value="on" name="bot_disabled" <?php $item->bot_disabled == 1 ? print 'checked="checked"' : ''?> /> Block bot, chat will be never forwarded to bot</label><br/>
+</div>

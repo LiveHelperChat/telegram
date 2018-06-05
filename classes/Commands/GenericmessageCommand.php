@@ -614,21 +614,25 @@ class GenericmessageCommand extends SystemCommand
 
                 $chat->saveThis();
 
-                \erLhcoreClassChatValidator::setBot($chat);
+                if ($tBot->bot_disabled == 0) {
+                    \erLhcoreClassChatValidator::setBot($chat);
+                }
 
                 /**
                  * Execute standard callback as chat was started
                  */
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array(
                     'chat' => & $chat,
-                    'msg' => $msg
+                    'msg' => $msg,
+                    'bot_disabled' => $tBot->bot_disabled
                 ));
 
                 // General module signal that it has received an sms
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received',array(
                     'chat' => & $chat,
                     'msg' => $msg,
-                    'sender' => 'bot_visitor'
+                    'sender' => 'bot_visitor',
+                    'bot_disabled' => $tBot->bot_disabled
                 ));
             }
         }
