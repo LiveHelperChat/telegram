@@ -15,7 +15,7 @@
     "email": "remdex@mgmail.com"
   },
   "require": {
-    "longman/telegram-bot": "*"
+    "longman/telegram-bot": "dev-master#fd8c787753b3a2ad11bc60c063cff1358a32a3b4"
   },
   "minimum-stability": "dev",
   "config": {
