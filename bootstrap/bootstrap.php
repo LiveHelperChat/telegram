@@ -415,15 +415,18 @@ class erLhcoreClassExtensionLhctelegram {
                     if ($operator->user->hide_online == 0) {
 
                         // Do not notify if user is not assigned to department
+                        // Do not notify if user has only read department permission
                         if ($operator->user->all_departments == 0 && $params['chat']->user_id != $operator->user->id) {
 
-                            $userDepartaments = erLhcoreClassUserDep::getUserDepartaments($operator->user->id);
+                            $userDepartments = erLhcoreClassUserDep::getUserDepartaments($operator->user->id);
 
-                            if (count($userDepartaments) == 0) {
+                            $userReadDepartments = erLhcoreClassUserDep::getUserReadDepartments($operator->user->id);
+
+                            if (count($userDepartments) == 0) {
                                 continue;
                             }
 
-                            if (!in_array($params['chat']->dep_id,$userDepartaments)) {
+                            if (!in_array($params['chat']->dep_id,$userDepartments) || in_array($params['chat']->dep_id,$userReadDepartments)) {
                                 continue;
                             }
                         }
