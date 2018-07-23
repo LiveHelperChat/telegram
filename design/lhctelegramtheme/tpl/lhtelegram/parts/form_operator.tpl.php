@@ -9,6 +9,7 @@
         'optional_field' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Select operator'),
         'selected_id'    => $item->user_id,
         'css_class'      => 'form-control',
+        'display_name'   => 'name_official',
         'list_function'  => 'erLhcoreClassModelUser::getUserList',
         'list_function_params'  => array(),
     )); ?>

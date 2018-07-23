@@ -2,15 +2,27 @@
 
 $fieldsSearch = array();
 
-$fieldsSearch['name'] = array (
+$fieldsSearch['user_id'] = array (
     'type' => 'text',
-    'trans' => 'Name',
+    'trans' => 'User',
     'required' => false,
     'valid_if_filled' => false,
-    'filter_type' => 'like',
-    'filter_table_field' => 'name',
-    'validation_definition' => new ezcInputFormDefinitionElement (
-        ezcInputFormDefinitionElement::OPTIONAL, 'string'
+    'filter_type' => 'filter',
+    'filter_table_field' => 'user_id',
+    'validation_definition' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'int', array( 'min_range' => 1)
+    )
+);
+
+$fieldsSearch['bot_id'] = array (
+    'type' => 'text',
+    'trans' => 'Bot',
+    'required' => false,
+    'valid_if_filled' => false,
+    'filter_type' => 'filter',
+    'filter_table_field' => 'bot_id',
+    'validation_definition' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'int', array( 'min_range' => 1)
     )
 );
 

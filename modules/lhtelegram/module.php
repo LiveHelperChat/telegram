@@ -18,7 +18,7 @@ $ViewList['list'] = array(
 
 $ViewList['operators'] = array(
     'params' => array(),
-    'uparams' => array(),
+    'uparams' => array('user_id','bot_id'),
     'functions' => array('use_admin'),
 );
 

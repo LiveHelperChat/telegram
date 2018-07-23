@@ -1,7 +1,8 @@
 <h1><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Telegram operators');?></h1>
 
-<?php if (isset($items)) : ?>
+<?php include(erLhcoreClassDesign::designtpl('lhtelegram/parts/filter.tpl.php')); ?>
 
+<?php if (isset($items)) : ?>
     <table cellpadding="0" cellspacing="0" class="table" width="100%">
         <thead>
         <tr>
@@ -18,7 +19,13 @@
         <?php foreach ($items as $item) : ?>
             <tr>
                 <td><?php echo htmlspecialchars($item->id)?></td>
-                <td><?php echo htmlspecialchars($item->user)?></td>
+                <td>
+                    <?php if (is_object($item->user)) : ?>
+                    <?php echo htmlspecialchars($item->user->name_official)?>
+                    <?php else : ?>
+                    -
+                    <?php endif; ?>
+                </td>
                 <td><?php echo htmlspecialchars($item->bot)?></td>
                 <td><?php echo htmlspecialchars($item->chat_id)?></td>
                 <td><?php echo $item->confirmed?></td>
