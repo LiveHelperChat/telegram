@@ -573,6 +573,8 @@ class erLhcoreClassExtensionLhctelegram {
                         $signatureText = $statusSignature['signature'];
                     }
 
+                    $params['msg']->msg = str_replace(array('[list]','[/list]','[*]','[b]','[/b]','[i]','[/i]','[u]','[/u]','[s]','[/s]'),array('','','','','','','','','','',''),$params['msg']->msg);
+
                     $data = [
                         'chat_id' => $tChat->tchat_id,
                         'text'    => trim($params['msg']->msg) . $signatureText,
