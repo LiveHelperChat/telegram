@@ -163,7 +163,7 @@ class CallbackqueryCommand extends SystemCommand
 
             $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('bot_id' => $tBot->id, 'confirmed' => 1, 'tuser_id' => $callback_query->getFrom()->getId())));
 
-            if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT || ($chat->status == \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT && $operator instanceof \erLhcoreClassModelTelegramOperator && $operator->user_id == $chat->user_id)) {
+            if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT || ($chat->status == \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT && $operator instanceof \erLhcoreClassModelTelegramOperator && $operator->user_id == $chat->user_id)) {
 
                 $wasPending = $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT;
 
