@@ -10,9 +10,9 @@
 <?php endif; ?>
 
 <ul class="nav nav-pills">
-    <li role="presentation"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
-    <li role="presentation"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
-    <li role="presentation" class="active"><a href="#bot" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link"href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link"href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
+    <li role="presentation"  class="nav-item"><a class="active nav-link" href="#bot" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
 </ul>
 
 <div class="tab-content">
@@ -21,8 +21,8 @@
         <form action="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" method="post">
             <?php include(erLhcoreClassDesign::designtpl('lhtelegram/parts/form_department.tpl.php'));?>
             <div class="btn-group" role="group" aria-label="...">
-                <input type="submit" class="btn btn-default" name="Save_page" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Save');?>"/>
-                <input type="submit" class="btn btn-default" name="Cancel_page" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Cancel');?>"/>
+                <input type="submit" class="btn btn-secondary" name="Save_page" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Save');?>"/>
+                <input type="submit" class="btn btn-secondary" name="Cancel_page" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Cancel');?>"/>
             </div>
         </form>
 

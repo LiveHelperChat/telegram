@@ -19,7 +19,7 @@
                 <td><?php echo htmlspecialchars($signature->user)?></td>
                 <td><?php echo erLhcoreClassDesign::shrt($signature->signature,30,'...',30,ENT_QUOTES);?></td>
                 <td><?php echo htmlspecialchars($signature->bot)?></td>
-                <td><a class="btn btn-default btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignatureglobal')?>/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Edit');?></a></td>
+                <td><a class="btn btn-secondary btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignatureglobal')?>/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Edit');?></a></td>
                 <td><a class="btn btn-danger btn-xs csfr-required" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('kernel/messages','Are you sure?');?>')" href="<?php echo erLhcoreClassDesign::baseurl('telegram/deletesignature')?>/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Delete');?></a></td>
             </tr>
         <?php endforeach; ?>
@@ -28,7 +28,7 @@
 
 <?php include(erLhcoreClassDesign::designtpl('lhkernel/secure_links.tpl.php')); ?>
 
-<a class="btn btn-default" href="<?php echo erLhcoreClassDesign::baseurl('telegram/newsignature')?>">New</a>
+<a class="btn btn-secondary" href="<?php echo erLhcoreClassDesign::baseurl('telegram/newsignature')?>">New</a>
 
 <?php if (isset($pages)) : ?>
     <?php include(erLhcoreClassDesign::designtpl('lhkernel/paginator.tpl.php')); ?>

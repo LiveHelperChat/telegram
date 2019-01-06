@@ -21,9 +21,9 @@
 
 
 <ul class="nav nav-pills" role="tablist">
-    <li role="presentation"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
-    <li role="presentation" class="active"><a href="#signature" role="tab" data-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
-    <li role="presentation"><a href="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link" href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link active" href="#signature" role="tab" data-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
 </ul>
 
 <div class="tab-content">
@@ -43,7 +43,7 @@
             <tr>
                 <td><?php echo htmlspecialchars($signature->user)?></td>
                 <td><?php echo erLhcoreClassDesign::shrt($signature->signature,30,'...',30,ENT_QUOTES);?></td>
-                <td><a class="btn btn-default btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>/(action)/edit/(itemid)/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Edit');?></a></td>
+                <td><a class="btn btn-secondary btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>/(action)/edit/(itemid)/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Edit');?></a></td>
                 <td><a class="btn btn-danger btn-xs csfr-required" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('kernel/messages','Are you sure?');?>')" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>/(action)/delete/(itemid)/<?php echo $signature->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/userlist','Delete');?></a></td>
             </tr>
             <?php endforeach; ?>
@@ -79,7 +79,7 @@
                 <textarea name="signature" rows="5" class="form-control"><?php echo htmlspecialchars(preg_replace("[\n]","\n\r",$newSignature->signature,1))?></textarea>
             </div>
 
-            <input type="submit" class="btn btn-default" name="SaveAction" value="Save">
+            <input type="submit" class="btn btn-secondary" name="SaveAction" value="Save">
         </form>
 
     </div>

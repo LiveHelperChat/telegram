@@ -32,7 +32,7 @@
         </div>
         <div class="col-md-2">
             <div><label>&nbsp;</label></div>
-            <input type="submit" name="doSearch" class="btn btn-default" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Search');?>" />
+            <input type="submit" name="doSearch" class="btn btn-secondary" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Search');?>" />
         </div>
     </div>
 

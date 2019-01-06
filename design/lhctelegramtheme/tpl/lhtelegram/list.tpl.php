@@ -18,7 +18,7 @@
         <td><?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?> <a title="<?php echo $item->callback_url?>" href="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>" class="btn btn-xs btn-info">Set webhook</a></td>
         <td nowrap>
           <div class="btn-group" role="group" aria-label="..." style="width:60px;">
-            <a class="btn btn-default btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>" ><i class="material-icons mr-0">&#xE254;</i></a>
+            <a class="btn btn-secondary btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>" ><i class="material-icons mr-0">&#xE254;</i></a>
             <a class="btn btn-danger btn-xs csfr-required" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('kernel/messages','Are you sure?');?>')" href="<?php echo erLhcoreClassDesign::baseurl('telegram/delete')?>/<?php echo $item->id?>" ><i class="material-icons mr-0">&#xE872;</i></a>
           </div>
         </td>
@@ -34,4 +34,4 @@
 
 <?php endif;?>
 
-<a href="<?php echo erLhcoreClassDesign::baseurl('telegram/new')?>" class="btn btn-default"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','New');?></a>
+<a href="<?php echo erLhcoreClassDesign::baseurl('telegram/new')?>" class="btn btn-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','New');?></a>
