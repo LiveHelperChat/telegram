@@ -131,7 +131,7 @@ class GenericmessageCommand extends SystemCommand
 
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('file.uploadfile.file_store', array('chat_file' => $fileUpload));
 
-                return '[file='.$fileUpload->id.'_'.md5($fileUpload->name.'_'.$chat->id).']';
+                return '[file='.$fileUpload->id.'_'.$fileUpload->security_hash.']';
 
             } catch (\Exception $e) {
                 return $e->getMessage();
