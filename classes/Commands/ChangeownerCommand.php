@@ -25,17 +25,17 @@ class ChangeownerCommand extends UserCommand
     /**
      * @var string
      */
-    protected $name = 'chat';
+    protected $name = 'changeowner';
 
     /**
      * @var string
      */
-    protected $description = 'Get information about currently assigned chat or any chat by id.';
+    protected $description = 'You can use this command to change owner of the chat';
 
     /**
      * @var string
      */
-    protected $usage = 'Type /chat <chat_number> or /chat';
+    protected $usage = 'Type /changeowner - shows logged operators which can be used to transfer current chat. /changeowner <chat_id> issue transfer initialization for specific chat_id /changeowner <chat_id> <operator_id> transfer chat instantly';
 
     /**
      * @var string
@@ -55,15 +55,15 @@ class ChangeownerCommand extends UserCommand
         if ($message !== null) {
             $params = explode(' ',trim($message->getText(true)));
             $chat_id = $message->getChat()->getId();
-            $chatID = isset($params[0]) ? $params[0] : null;
-            $chatUserID = isset($params[1]) ? $params[1] : null;
+            $chatID = isset($params[0]) ? (int)$params[0] : 0;
+            $chatUserID = isset($params[1]) ? (int)$params[1] : 0;
         } else {
             $callback_query = $this->getUpdate()->getCallbackQuery();
             $text = $callback_query->getData();
             $chat_id = $callback_query->getMessage()->getChat()->getId();
             $params = explode('||',$text);
-            $chatID = isset($params[2]) ? $params[2] : null;
-            $chatUserID = isset($params[3]) ? $params[3] : null;
+            $chatID = isset($params[2]) ? (int)$params[2] : 0;
+            $chatUserID = isset($params[3]) ? (int)$params[3] : 0;
         }
 
         $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
@@ -81,7 +81,7 @@ class ChangeownerCommand extends UserCommand
 
         if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
 
-            if ($chatID === null) {
+            if ($chatID === 0) {
                 $chat = \erLhcoreClassModelChat::fetch($operator->chat_id);
             } else {
                 $chat = \erLhcoreClassModelChat::fetch($chatID);
@@ -95,7 +95,7 @@ class ChangeownerCommand extends UserCommand
                 return Request::sendMessage($data);
             }
 
-            if ($chatUserID !== null) {
+            if ($chatUserID !== 0) {
 
                 $operatorDestination = \erLhcoreClassModelUser::fetch($chatUserID);
 
@@ -195,8 +195,6 @@ class ChangeownerCommand extends UserCommand
                 return ;
             }
 
-            $onlineTimeout = (int)\erLhcoreClassModelChatConfig::fetchCache('sync_sound_settings')->data['online_timeout'];
-
             \erLhcoreClassUser::instance()->setLoggedUser($operator->user_id);
 
             $currentUser = \erLhcoreClassUser::instance();
@@ -233,7 +231,7 @@ class ChangeownerCommand extends UserCommand
         } else {
             $data = [
                 'chat_id' => $chat_id,
-                'text'    => "Associated operator could not be found",
+                'text'    => "Associated operator could not be foundddd",
             ];
             return Request::sendMessage($data);
         }
