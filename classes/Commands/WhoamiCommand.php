@@ -144,7 +144,7 @@ class WhoamiCommand extends UserCommand
             $inlineKeyboard = new InlineKeyboard($inlineKeyboards);
             $data['reply_markup'] = $inlineKeyboard;
             $data['text'] .=  PHP_EOL . 'Status: ' . ($operator->user->hide_online == 0 ? 'Online' : 'Offline');
-            $data['text'] .=  PHP_EOL . 'Associated operator: [' . $operator->user_id . '] ' . ($operator->user);
+            $data['text'] .=  PHP_EOL . 'Associated operator: [' . $operator->user_id . '] Official name - ' . ($operator->user->name_official) .' Support name - '. ($operator->user->name_support);
             $data['text'] .=  PHP_EOL . 'Bot as client: ' . ($tBot->bot_client == 1 ? 'Yes (you will receive new chat requests)' : 'No (you will NOT receive new chat requests)');
 
         } else {

@@ -146,74 +146,48 @@ class ChangeownerCommand extends UserCommand
                 $chat->chat_variables = json_encode($variablesArray);
                 $chat->chat_variables_array = $variablesArray;
                 $chat->status_sub = \erLhcoreClassModelChat::STATUS_SUB_OWNER_CHANGED;
+                $chat->transfer_uid = $operator->user_id;
                 $chat->saveThis();
 
                 $operator->chat_id = 0;
                 $operator->saveThis();
 
-                $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
-                $messagesContent = '';
-
-                foreach ($messages as $msg ) {
-                    if ($msg->user_id == -1) {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
-                    } else {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
-                    }
-                }
-
                 $data = [
                     'chat_id' => $chat_id,
-                    'text'    => 'Chat was transferred to:' . PHP_EOL . (string)$operatorDestination->name_support,
+                    'text'    => 'Chat was transferred to:' . PHP_EOL . (string)$operatorDestination->name_official,
                 ];
 
                 Request::sendMessage($data);
 
-                if ($operatorTelegramDestination instanceof \erLhcoreClassModelTelegramOperator) {
-                    $cfgSite = \erConfigClassLhConfig::getInstance();
-                    $secretHash = $cfgSite->getSetting( 'site', 'secrethash' );
+                $transferLegacy = \erLhcoreClassTransfer::getTransferByChat($chat->id);
 
-                    $receiver = $operatorDestination->email;
-                    $verifyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
-                    $url = (\erLhcoreClassSystem::$httpsMode ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . \erLhcoreClassDesign::baseurl('chat/accept').'/'.\erLhcoreClassModelChatAccept::generateAcceptLink($chat).'/'.$verifyEmail.'/'.$receiver;
-
-                   $inline_keyboard = new InlineKeyboard([
-                        ['text' => 'Accept transferred', 'callback_data' => 'accept_chat||' . $chat->id],
-                        ['text' => 'Open url', 'url' => $url],
-                    ]);
-
-                    $data = [
-                        'chat_id' => $operatorTelegramDestination->tchat_id,
-                        'parse_mode' => 'MARKDOWN',
-                        'text'    => trim('Chat was transferred to you. Messages: '. PHP_EOL . $messagesContent),
-                        'reply_markup' => $inline_keyboard,
-                    ];
-
-                    Request::sendMessage($data);
+                if (is_array($transferLegacy)) {
+                    $chatTransfer = \erLhcoreClassTransfer::getSession()->load('erLhcoreClassModelTransfer', $transferLegacy['id']);
+                    \erLhcoreClassTransfer::getSession()->delete($chatTransfer);
                 }
+
+                // Even it's just owner change we always store transfer object
+                $Transfer = new \erLhcoreClassModelTransfer();
+                $Transfer->chat_id = $chat->id;
+                $Transfer->ctime = time();
+                $Transfer->transfer_to_user_id = $operatorDestination->id;
+                $Transfer->from_dep_id = $chat->dep_id;
+                $Transfer->transfer_user_id = $operator->user_id;
+                \erLhcoreClassTransfer::getSession()->save($Transfer);
+
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_owner_changed', array('chat' => & $chat, 'user' => $operatorDestination));
 
                 return ;
             }
 
-            \erLhcoreClassUser::instance()->setLoggedUser($operator->user_id);
-
-            $currentUser = \erLhcoreClassUser::instance();
-
-            $canListOnlineUsersAll = false;
-
-            if (\erLhcoreClassModelChatConfig::fetchCache('list_online_operators')->current_value == 1) {
-                $canListOnlineUsers = $currentUser->hasAccessTo('lhuser','userlistonline');
-                $canListOnlineUsersAll = $currentUser->hasAccessTo('lhuser','userlistonlineall');
-            }
-
-            $onlineOperators = \erLhcoreClassModelUserDep::getOnlineOperators($currentUser, $canListOnlineUsersAll, array('sort' => 'last_activity DESC'), 20, 7*24*3600);
+            $onlineOperators = \erLhcoreClassModelUser::getUserList();
 
             \erLhcoreClassChat::prefillGetAttributes($onlineOperators,array('lastactivity_ago','offline_since','user_id','id','name_official','pending_chats','inactive_chats','active_chats','departments_names','hide_online'),array(),array('filter_function' => true, 'remove_all' => true));
 
             $inlineKeyboards = array();
 
             foreach ($onlineOperators as $operator) {
-                $inlineKeyboards[] = ['text' => $operator->name_official . " UID [{$operator->user_id}], AC [{$operator->active_chats}]", 'callback_data' => 'replycommand||changeowner||' . $chat->id . '||' . $operator->user_id];
+                $inlineKeyboards[] = ['text' => $operator->name_official . " [{$operator->id}]", 'callback_data' => 'replycommand||changeowner||' . $chat->id . '||' . $operator->id];
             }
 
             $inlineKeyboard = new InlineKeyboard([]);

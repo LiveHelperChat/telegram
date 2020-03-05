@@ -84,16 +84,20 @@ class ChatCommand extends UserCommand
                 return Request::sendMessage($data);
             }
 
-            $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
             $messagesContent = '';
 
-            foreach ($messages as $msg ) {
-                if ($msg->user_id == -1) {
-                    $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
-                } else {
-                    $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
+            if ($text > 0){
+                $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
+                foreach ($messages as $msg ) {
+                    if ($msg->user_id == -1) {
+                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
+                    } else {
+                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
+                    }
                 }
+                $messagesContent = PHP_EOL . "Chat messages. " . PHP_EOL . $messagesContent;
             }
+
 
             $inline_keyboard = new InlineKeyboard([
                 ['text' => 'Change owner', 'callback_data' => 'replycommand||changeowner||' . $chat->id]
@@ -101,7 +105,7 @@ class ChatCommand extends UserCommand
 
             $data = [
                 'chat_id' => $chat_id,
-                'text'    => "Operator: ". (string)$chat->user .'['.$chat->user_id.']'. PHP_EOL . "Chat messages. " . PHP_EOL . $messagesContent,
+                'text'    => "Operator: ". (string)$chat->n_off_full . " \[{$chat->user_id}] *" . $chat->id . '*' .$messagesContent,
                 'parse_mode' => 'MARKDOWN',
                 'reply_markup' => $inline_keyboard,
             ];

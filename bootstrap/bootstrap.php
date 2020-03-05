@@ -139,7 +139,81 @@ class erLhcoreClassExtensionLhctelegram {
         $dispatcher->listen('chat.genericbot_set_bot',array(
                 $this, 'allowSetBot')
         );
-	}
+        
+        $dispatcher->listen('chat.chat_owner_changed',array(
+                $this, 'allowSetBot')
+        );
+        
+        $dispatcher->listen('chat.chat_transfered',array(
+                $this, 'allowSetBot')
+        );
+
+        $dispatcher->listen('chat.chat_owner_changed',array(
+                $this, 'ownerChanged')
+        );
+
+        $dispatcher->listen('chat.chat_transfered',array(
+                $this, 'chatTransfered')
+        );
+    }
+
+	public function chatTransfered($params) {
+
+	    $transfer = $params['transfer'];
+
+	    if ($transfer->transfer_to_user_id > 0) {
+            $this->ownerChanged(array(
+                'chat' => $params['chat'],
+                'user' => erLhcoreClassModelUser::fetch($transfer->transfer_to_user_id)
+            ));
+        }
+    }
+
+    public function ownerChanged($params)
+    {
+
+        $operatorDestination = erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('confirmed' => 1, 'user_id' => $params['user']->id)));
+
+        if ($operatorDestination instanceof erLhcoreClassModelTelegramOperator) {
+
+            $chat = $params['chat'];
+
+            $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
+            $messagesContent = '';
+
+            foreach ($messages as $msg ) {
+                if ($msg->user_id == -1) {
+                    $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
+                } else {
+                    $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
+                }
+            }
+
+            $cfgSite = \erConfigClassLhConfig::getInstance();
+            $secretHash = $cfgSite->getSetting( 'site', 'secrethash' );
+
+            $receiver = $operatorDestination->email;
+            $verifyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
+            $url = (\erLhcoreClassSystem::$httpsMode ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . \erLhcoreClassDesign::baseurl('chat/accept').'/'.\erLhcoreClassModelChatAccept::generateAcceptLink($chat).'/'.$verifyEmail.'/'.$receiver;
+
+            $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard([
+                ['text' => 'Accept transferred', 'callback_data' => 'accept_chat||' . $chat->id],
+                ['text' => 'Open url', 'url' => $url],
+            ]);
+
+            $data = [
+                'chat_id' => $operatorDestination->tchat_id,
+                'parse_mode' => 'MARKDOWN',
+                'text'    => trim('Chat was transferred to you. Messages: '. PHP_EOL . $messagesContent),
+                'reply_markup' => $inline_keyboard,
+            ];
+
+            $telegram = new Longman\TelegramBot\Telegram($operatorDestination->bot->bot_api, $operatorDestination->bot->bot_username);
+
+            Longman\TelegramBot\Request::sendMessage($data);
+        }
+    }
+
 
 	public static function allowSetBot($params)
     {
