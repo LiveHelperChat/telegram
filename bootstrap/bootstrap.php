@@ -139,14 +139,6 @@ class erLhcoreClassExtensionLhctelegram {
         $dispatcher->listen('chat.genericbot_set_bot',array(
                 $this, 'allowSetBot')
         );
-        
-        $dispatcher->listen('chat.chat_owner_changed',array(
-                $this, 'allowSetBot')
-        );
-        
-        $dispatcher->listen('chat.chat_transfered',array(
-                $this, 'allowSetBot')
-        );
 
         $dispatcher->listen('chat.chat_owner_changed',array(
                 $this, 'ownerChanged')
