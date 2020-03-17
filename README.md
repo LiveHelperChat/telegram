@@ -36,5 +36,6 @@ This allows to use bot as gateway between normal chats on your page and bot chat
 4. Now start a conversation in Telegram and register yourself within bot by typing /register <id>. The <id> should be registered operator id from the very first column in the operators list in LHC Modules => Telegram Settings => Telegram operators.
 5. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 6. That's all. Just type /help to see what available commands are supported.
-    operators
-https://liyou get an error message saying it can't find an operator with that ID, and the how-to-usegram-if-you-are-automated-hosting-client-489a.html
+    
+    
+https://livehelperchat.com/how-to-use-telegram-if-you-are-automated-hosting-client-489a.html
