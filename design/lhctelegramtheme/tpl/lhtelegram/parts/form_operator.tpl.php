@@ -1,5 +1,6 @@
 <div class="form-group">
     <label><input type="checkbox" name="confirmed" <?php echo $item->confirmed == 1 ? print 'checked="checked"' : ''?> > <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Confirmed');?></label>
+    <p><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/fbmessenger','Do not check this unless you know what you are doing. This value will be automatically checked once you confirm your operator from telegram.')?></p>
 </div>
 
 <div class="form-group">
