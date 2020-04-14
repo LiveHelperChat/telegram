@@ -18,7 +18,7 @@ This extension allow have support for telegram bot support directly in Live Help
 cd extension/lhctelegram && composer.phar update
 ``` 
 5. Clean cache. Just click clean cache in Live Helper Chat back office.
-6. Execute doc/install.sql on database manager or just run
+6. Execute doc/install.sql on database manager or just run. You will have to wait 10 seconds for queries to be executed.
     ```
     php cron.php -s site_admin -e lhctelegram -c cron/update_structure
     ```
