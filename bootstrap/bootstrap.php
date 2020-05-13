@@ -63,6 +63,11 @@ class erLhcoreClassExtensionLhctelegram {
 		    'chatStarted'
 		));
 
+		$dispatcher->listen('chat.data_changed_auto_assign', array(
+		    $this,
+		    'chatStarted'
+		));
+
 		$dispatcher->listen('chat.web_add_msg_admin', array(
 		    $this,
 		    'messageAdded'
@@ -478,7 +483,7 @@ class erLhcoreClassExtensionLhctelegram {
             if ($bot->bot instanceof erLhcoreClassModelTelegramBot && $bot->bot->bot_client == 1) {
                 $operators = erLhcoreClassModelTelegramOperator::getList(array('filter' => array('bot_id' => $bot->bot->id)));
                 foreach ($operators as $operator) {
-                    if ($operator->user->hide_online == 0) {
+                    if ($operator->user->hide_online == 0 && ($operator->user->id == $params['chat']->user_id || $params['chat']->user_id == 0)) {
 
                         // Do not notify if user is not assigned to department
                         // Do not notify if user has only read department permission
@@ -505,7 +510,13 @@ class erLhcoreClassExtensionLhctelegram {
 
                         $visitor = array();
                         $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) .',  ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
-                        $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
+
+                        if (isset($params['msg'])) {
+                            $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
+                        } elseif ($params['chat']->user_id > 0) {
+                            $visitor[] = 'Chat was assigned to you';
+                        }
+
 
                         $receiver = $operator->user->email;
                         $verifyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
@@ -524,7 +535,6 @@ class erLhcoreClassExtensionLhctelegram {
                         ];
 
                         Longman\TelegramBot\Request::sendMessage($data);
-
 
                     }
                 }
