@@ -649,7 +649,9 @@ class erLhcoreClassExtensionLhctelegram {
                         $signatureText = $statusSignature['signature'];
                     }
 
-                    $params['msg']->msg = str_replace(array('[list]','[/list]','[*]','[b]','[/b]','[i]','[/i]','[u]','[/u]','[s]','[/s]'),array('','','','','','','','','','',''),$params['msg']->msg);
+                    $params['msg']->msg = str_replace(array('[list]','[/list]','[*]','[b]','[/b]','[i]','[/i]','[u]','[/u]','[s]','[/s]','[br]'),array('','','','','','','','','','','',"\n"),$params['msg']->msg);
+
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.make_plain_message', array('msg' => & $params['msg']->msg));
 
                     $data = [
                         'chat_id' => $tChat->tchat_id,
