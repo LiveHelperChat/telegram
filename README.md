@@ -6,7 +6,7 @@ This extension allow have support for telegram bot support directly in Live Help
 
 1. Clone github repository
 2. Rename cloned folder of telegram to lhctelegram and put it in extension/ directory
-3. Activate extension in settings/settings.ini.php file
+3. Activate extension in main Live Helper Chat settings file settings/settings.ini.php file
 ``` 
 'extensions' => 
     array (          
