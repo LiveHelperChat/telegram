@@ -454,7 +454,7 @@ class erLhcoreClassExtensionLhctelegram {
 
                     $data = [
                         'chat_id' => $operator->tchat_id,
-                        'text'    => trim( ($params['msg']->user_id == 0 ? $params['chat']->nick . ': ' : '') . ($params['msg']->name_support . ' ' . $params['msg']->msg))
+                        'text'    => trim( ($params['msg']->user_id == 0 ? $params['chat']->nick . ': ' : '') . ($params['msg']->name_support . ' ' . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0))))
                     ];
 
                     if ($operator->chat_id != $chat->id) {
@@ -512,7 +512,7 @@ class erLhcoreClassExtensionLhctelegram {
                         $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) .',  ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
 
                         if (isset($params['msg'])) {
-                            $visitor[] = 'Message: *' . trim($params['msg']->msg) . '*';
+                            $visitor[] = 'Message: *' . trim(erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0))) . '*';
                         } elseif ($params['chat']->user_id > 0) {
                             $visitor[] = 'Chat was assigned to you';
                         }
