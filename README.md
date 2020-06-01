@@ -2,6 +2,10 @@
 
 This extension allow have support for telegram bot support directly in Live Helper Chat. It support sound messages, images, files.
 
+## Requirements
+
+Min 3.36v Live Helper Chat version.
+
 ## Install instructions
 
 1. Clone github repository
