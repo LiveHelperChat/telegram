@@ -68,6 +68,12 @@ class erLhcoreClassExtensionLhctelegram {
 		    'chatStarted'
 		));
 
+        $dispatcher->listen('chat.genericbot_chat_command_transfer', array(
+            $this,
+            'botTransfer'
+        ));
+
+
 		$dispatcher->listen('chat.web_add_msg_admin', array(
 		    $this,
 		    'messageAdded'
@@ -475,8 +481,19 @@ class erLhcoreClassExtensionLhctelegram {
         }
     }
 
+    public function botTransfer($params) {
+        if (isset($params['action']['content']['command']) && $params['action']['content']['command'] == 'stopchat' && isset($params['is_online']) && $params['is_online'] == true) {
+            $this->chatStarted(array('chat' => $params['chat']));
+        }
+    }
+
 	public function chatStarted($params)
     {
+        // Chat is in bot mode so just ignore it.
+        if ($params['chat']->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+            return;
+        }
+
         $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
 
         foreach ($bots as $bot) {

@@ -42,7 +42,7 @@ This allows to use bot as gateway between normal chats on your page and bot chat
 6. That's all. Just type /help to see what available commands are supported.
     
 ## Tip
-If you are planning only using telegram to support your site vistiors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
+If you are planning only using telegram to support your site visitors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
 
 Since 3.36v you can just set your online condition to "Always online" and you won't have to do anything else.
 
