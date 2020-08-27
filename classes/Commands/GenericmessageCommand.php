@@ -420,6 +420,8 @@ class GenericmessageCommand extends SystemCommand
                     $pnd_time = time();
                 }
 
+
+
                 $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = :has_unread_messages, user_id = :user_id, pnd_time = :pnd_time, status = :status, status_sub_sub = :status_sub_sub WHERE id = :id');
                 $stmt->bindValue(':id', $chat->id, \PDO::PARAM_INT);
                 $stmt->bindValue(':last_user_msg_time', $msg->time, \PDO::PARAM_INT);
@@ -442,6 +444,8 @@ class GenericmessageCommand extends SystemCommand
                 $tChat->saveThis();
 
                 $db->commit();
+
+                $this->sendBotResponse($chat, $msg);
 
                 // Standard event on unread chat messages
                 if ($chat->has_unread_messages == 1 && $chat->last_user_msg_time < (time() - 5)) {
@@ -616,6 +620,7 @@ class GenericmessageCommand extends SystemCommand
 
                 if ($tBot->bot_disabled == 0) {
                     \erLhcoreClassChatValidator::setBot($chat);
+                    $this->sendBotResponse($chat, $msg);
                 }
 
                 /**
@@ -638,5 +643,23 @@ class GenericmessageCommand extends SystemCommand
         }
         
         return Request::emptyResponse();
+    }
+
+    public function sendBotResponse($chat, $msg) {
+        if ($chat->gbot_id > 0 && (!isset($chat->chat_variables_array['gbot_disabled']) || $chat->chat_variables_array['gbot_disabled'] == 0)) {
+
+            $chat->refreshThis();
+
+            \erLhcoreClassGenericBotWorkflow::userMessageAdded($chat, $msg);
+
+            // Find a new messages
+            $botMessages = \erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $msg->id)));
+            foreach ($botMessages as $botMessage) {
+                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
+                    'chat' => & $chat,
+                    'msg' => $botMessage
+                ));
+            }
+        }
     }
 }
