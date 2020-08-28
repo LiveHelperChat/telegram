@@ -619,8 +619,8 @@ class GenericmessageCommand extends SystemCommand
                 $chat->saveThis();
 
                 if ($tBot->bot_disabled == 0) {
-                    \erLhcoreClassChatValidator::setBot($chat);
-                    $this->sendBotResponse($chat, $msg);
+                    \erLhcoreClassChatValidator::setBot($chat, array('msg' => $msg));
+                    $this->sendBotResponse($chat, $msg, array('init' => true));
                 }
 
                 /**
@@ -645,12 +645,14 @@ class GenericmessageCommand extends SystemCommand
         return Request::emptyResponse();
     }
 
-    public function sendBotResponse($chat, $msg) {
+    public function sendBotResponse($chat, $msg, $params = array()) {
         if ($chat->gbot_id > 0 && (!isset($chat->chat_variables_array['gbot_disabled']) || $chat->chat_variables_array['gbot_disabled'] == 0)) {
 
             $chat->refreshThis();
 
-            \erLhcoreClassGenericBotWorkflow::userMessageAdded($chat, $msg);
+            if (!isset($params['init']) || $params['init'] == false) {
+                \erLhcoreClassGenericBotWorkflow::userMessageAdded($chat, $msg);
+            }
 
             // Find a new messages
             $botMessages = \erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $msg->id)));
