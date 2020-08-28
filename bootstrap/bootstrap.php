@@ -206,7 +206,6 @@ class erLhcoreClassExtensionLhctelegram {
 
             $data = [
                 'chat_id' => $operatorDestination->tchat_id,
-                'parse_mode' => 'MARKDOWN',
                 'text'    => trim('Chat was transferred to you. Messages: '. PHP_EOL . $messagesContent),
                 'reply_markup' => $inline_keyboard,
             ];
@@ -529,11 +528,10 @@ class erLhcoreClassExtensionLhctelegram {
                         $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) .',  ID: ' . $params['chat']->id .', Nick: ' . $params['chat']->nick;
 
                         if (isset($params['msg'])) {
-                            $visitor[] = 'Message: *' . trim(erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0))) . '*';
+                            $visitor[] = 'Message: ' . trim(erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0))) . '';
                         } elseif ($params['chat']->user_id > 0) {
                             $visitor[] = 'Chat was assigned to you';
                         }
-
 
                         $receiver = $operator->user->email;
                         $verifyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
@@ -546,7 +544,6 @@ class erLhcoreClassExtensionLhctelegram {
 
                         $data = [
                             'chat_id' => $operator->tchat_id,
-                            'parse_mode' => 'MARKDOWN',
                             'text'    => implode("\n", $visitor),
                             'reply_markup' => $inline_keyboard,
                         ];

@@ -105,9 +105,8 @@ class ChatCommand extends UserCommand
 
             $data = [
                 'chat_id' => $chat_id,
-                'text'    => "Operator: ". (string)$chat->n_off_full . " \[{$chat->user_id}] *" . $chat->id . '*' .$messagesContent,
-                'parse_mode' => 'MARKDOWN',
-                'reply_markup' => $inline_keyboard,
+                'text'    => "Operator: ". (string)$chat->n_off_full . " \[{$chat->user_id}] " . $chat->id . '' .$messagesContent,
+                 'reply_markup' => $inline_keyboard,
             ];
 
             return Request::sendMessage($data);

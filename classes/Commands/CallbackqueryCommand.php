@@ -382,7 +382,6 @@ class CallbackqueryCommand extends SystemCommand
 
                 $data = [
                     'chat_id' => $callback_query->getFrom()->getId(),
-                    'parse_mode' => 'MARKDOWN',
                     'text'    => "Chat was already accepted by. " . (string)$chat->user,
                     'reply_markup' => $inline_keyboard,
                 ];

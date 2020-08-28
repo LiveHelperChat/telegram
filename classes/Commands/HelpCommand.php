@@ -55,20 +55,19 @@ class HelpCommand extends UserCommand
 
         $data = [
             'chat_id'    => $chat_id,
-            'parse_mode' => 'markdown',
         ];
 
         list($all_commands, $user_commands, $admin_commands) = $this->getUserAdminCommands();
 
         // If no command parameter is passed, show the list.
         if ($command_str === '') {
-            $data['text'] = '*Commands List*:' . PHP_EOL;
+            $data['text'] = 'Commands List:' . PHP_EOL;
             foreach ($user_commands as $user_command) {
                 $data['text'] .= '/' . $user_command->getName() . ' - ' . $user_command->getDescription() . PHP_EOL;
             }
 
             if ($safe_to_show && count($admin_commands) > 0) {
-                $data['text'] .= PHP_EOL . '*Admin Commands List*:' . PHP_EOL;
+                $data['text'] .= PHP_EOL . 'Admin Commands List:' . PHP_EOL;
                 foreach ($admin_commands as $admin_command) {
                     $data['text'] .= '/' . $admin_command->getName() . ' - ' . $admin_command->getDescription() . PHP_EOL;
                 }
