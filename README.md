@@ -1,4 +1,4 @@
-# Telegeram bot integration
+# Telegram bot integration
 
 This extension allow have support for telegram bot support directly in Live Helper Chat. It support sound messages, images, files.
 
