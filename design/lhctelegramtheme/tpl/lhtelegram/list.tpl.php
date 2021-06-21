@@ -2,7 +2,7 @@
 
 <?php if (isset($items)) : ?>
 
-<table cellpadding="0" cellspacing="0" class="table" width="100%">
+<table cellpadding="0" cellspacing="0" class="table" width="100%" ng-non-bindable>
 <thead>
     <tr>   
         <th width="1%">ID</th>

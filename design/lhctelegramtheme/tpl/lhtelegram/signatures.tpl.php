@@ -6,7 +6,7 @@
 <?php endif; ?>
 
 <?php if (!empty($items)) : ?>
-    <table class="table">
+    <table class="table" ng-non-bindable>
         <tr>
             <th>User</th>
             <th>Signature</th>

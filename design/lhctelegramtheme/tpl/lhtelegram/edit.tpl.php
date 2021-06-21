@@ -10,7 +10,7 @@
     <li role="presentation" class="nav-item"><a class="nav-link" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
 </ul>
 
-<div class="tab-content">
+<div class="tab-content" ng-non-bindable>
     <div role="tabpanel" class="tab-pane active" id="bot">
 
         <form action="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>" method="post">

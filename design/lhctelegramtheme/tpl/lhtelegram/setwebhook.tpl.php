@@ -4,5 +4,5 @@
 
 <?php if (isset($updated) && $updated == true) : ?>
 	<?php include(erLhcoreClassDesign::designtpl('lhkernel/alert_success.tpl.php'));?>
-	<p class="info">Webhook URL set to - <?php echo $item->callback_url?></p>
+	<p class="info" ng-non-bindable>Webhook URL set to - <?php echo $item->callback_url?></p>
 <?php endif; ?>

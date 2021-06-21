@@ -27,7 +27,7 @@
 </ul>
 
 <div class="tab-content">
-    <div role="tabpanel" class="tab-pane active" id="signature">
+    <div role="tabpanel" class="tab-pane active" id="signature" ng-non-bindable>
 
         <?php if (!empty($signatures)) : ?>
         <h3>Existing signatures</h3>
