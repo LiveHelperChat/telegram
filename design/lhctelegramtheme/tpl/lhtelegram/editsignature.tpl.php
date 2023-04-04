@@ -76,7 +76,7 @@
 
             <div class="form-group">
                 <label>Signature</label>
-                <textarea name="signature" rows="5" class="form-control"><?php echo htmlspecialchars(preg_replace("[\n]","\n\r",$newSignature->signature,1))?></textarea>
+                <textarea name="signature" rows="5" class="form-control"><?php echo htmlspecialchars(preg_replace("[\n]","\n\r",(string)$newSignature->signature,1))?></textarea>
             </div>
 
             <input type="submit" class="btn btn-secondary" name="SaveAction" value="Save">

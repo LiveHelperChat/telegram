@@ -138,6 +138,8 @@ class erLhcoreClassTelegramValidator
                 $botDep->saveThis();
             }
         }
+
+        return [];
     }
 
     public static function validateOperator(erLhcoreClassModelTelegramOperator & $item)
