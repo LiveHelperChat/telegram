@@ -45,6 +45,10 @@ class GenericCommand extends SystemCommand
     {
         $message = $this->getMessage();
 
+        if ($message === null) {
+            return ;
+        }
+
         //You can use $command as param
         $chat_id = $message->getChat()->getId();
         $user_id = $message->getFrom()->getId();
