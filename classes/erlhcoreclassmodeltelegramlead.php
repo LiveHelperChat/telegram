@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelTelegramLead
 {
     use erLhcoreClassDBTrait;

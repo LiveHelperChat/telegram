@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassTelegramValidator
 {
     public static function validateBot(erLhcoreClassModelTelegramBot & $item)
