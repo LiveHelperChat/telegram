@@ -13,6 +13,7 @@ namespace Longman\TelegramBot\Commands\UserCommands;
 use Longman\TelegramBot\Commands\Command;
 use Longman\TelegramBot\Commands\UserCommand;
 use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Entities\ServerResponse;
 
 /**
  * User "/help" command
@@ -44,7 +45,7 @@ class HelpCommand extends UserCommand
     /**
      * @inheritdoc
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         $message     = $this->getMessage();
         $chat_id     = $message->getChat()->getId();

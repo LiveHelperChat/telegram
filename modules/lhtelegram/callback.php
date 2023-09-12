@@ -1,10 +1,8 @@
 <?php
 
-/* erLhcoreClassLog::write(print_r($_SERVER,true));
-erLhcoreClassLog::write(print_r($_POST,true));
-erLhcoreClassLog::write(print_r($_GET,true));
-erLhcoreClassLog::write(file_get_contents("php://input"));
-exit; */
+
+//erLhcoreClassLog::write(file_get_contents("php://input"));
+
 
 $tBot = erLhcoreClassModelTelegramBot::fetch($Params['user_parameters']['id']);
 

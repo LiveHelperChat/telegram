@@ -11,9 +11,25 @@
 namespace Longman\TelegramBot\Commands\UserCommands;
 
 use Longman\TelegramBot\Commands\UserCommand;
-use Longman\TelegramBot\Request;
 use Longman\TelegramBot\Entities\InlineKeyboard;
 use Longman\TelegramBot\Entities\InlineKeyboardButton;
+
+use Longman\TelegramBot\DB;
+use Longman\TelegramBot\Entities\CallbackQuery;
+use Longman\TelegramBot\Entities\ChatJoinRequest;
+use Longman\TelegramBot\Entities\ChatMemberUpdated;
+use Longman\TelegramBot\Entities\ChosenInlineResult;
+use Longman\TelegramBot\Entities\InlineQuery;
+use Longman\TelegramBot\Entities\Message;
+use Longman\TelegramBot\Entities\Payments\PreCheckoutQuery;
+use Longman\TelegramBot\Entities\Payments\ShippingQuery;
+use Longman\TelegramBot\Entities\Poll;
+use Longman\TelegramBot\Entities\PollAnswer;
+use Longman\TelegramBot\Entities\ServerResponse;
+use Longman\TelegramBot\Entities\Update;
+use Longman\TelegramBot\Exception\TelegramException;
+use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Telegram;
 
 /**
  * User "/register" command
@@ -48,7 +64,7 @@ class ChatsCommand extends UserCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();

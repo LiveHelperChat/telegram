@@ -12,7 +12,7 @@ namespace Longman\TelegramBot\Commands\UserCommands;
 
 use Longman\TelegramBot\Commands\UserCommand;
 use Longman\TelegramBot\Request;
-
+use Longman\TelegramBot\Entities\ServerResponse;
 /**
  * User "/register" command
  *
@@ -46,7 +46,7 @@ class RegisterCommand extends UserCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();

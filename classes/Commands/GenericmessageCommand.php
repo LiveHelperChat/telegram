@@ -14,6 +14,7 @@ use Longman\TelegramBot\Commands\SystemCommand;
 use Longman\TelegramBot\Conversation;
 use Longman\TelegramBot\Request;
 use GuzzleHttp\Client;
+use Longman\TelegramBot\Entities\ServerResponse;
 
 /**
  * Generic message command
@@ -48,7 +49,7 @@ class GenericmessageCommand extends SystemCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function executeNoDb()
+    public function executeNoDb(): ServerResponse
     {
         // Do nothing
         return Request::emptyResponse();
@@ -172,7 +173,7 @@ class GenericmessageCommand extends SystemCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
 
         $message = $this->getMessage();
@@ -420,8 +421,6 @@ class GenericmessageCommand extends SystemCommand
                     $pnd_time = time();
                 }
 
-
-
                 $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id, has_unread_messages = :has_unread_messages, user_id = :user_id, pnd_time = :pnd_time, status = :status, status_sub_sub = :status_sub_sub WHERE id = :id');
                 $stmt->bindValue(':id', $chat->id, \PDO::PARAM_INT);
                 $stmt->bindValue(':last_user_msg_time', $msg->time, \PDO::PARAM_INT);
@@ -443,9 +442,15 @@ class GenericmessageCommand extends SystemCommand
                 $tChat->utime = time();
                 $tChat->saveThis();
 
+                if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+                    $_SERVER['HTTP_USER_AGENT'] = 'API, Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.71 Safari/537.36';
+                }
+
+                self::assignOnlineVisitor($chat, $tChat);
+
                 $db->commit();
 
-                $this->sendBotResponse($chat, $msg);
+                self::sendBotResponse($chat, $msg);
 
                 // Standard event on unread chat messages
                 if ($chat->has_unread_messages == 1 && $chat->last_user_msg_time < (time() - 5)) {
@@ -618,9 +623,15 @@ class GenericmessageCommand extends SystemCommand
 
                 $chat->saveThis();
 
+                if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+                    $_SERVER['HTTP_USER_AGENT'] = 'API, Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.71 Safari/537.36';
+                }
+
+                self::assignOnlineVisitor($chat, $tChat);
+
                 if ($tBot->bot_disabled == 0) {
                     \erLhcoreClassChatValidator::setBot($chat, array('msg' => $msg));
-                    $this->sendBotResponse($chat, $msg, array('init' => true));
+                    self::sendBotResponse($chat, $msg, array('init' => true));
                 }
 
                 /**
@@ -645,23 +656,68 @@ class GenericmessageCommand extends SystemCommand
         return Request::emptyResponse();
     }
 
-    public function sendBotResponse($chat, $msg, $params = array()) {
+    public static function assignOnlineVisitor(& $chat, $tChat)
+    {
+        if ($chat->online_user_id == 0 && \erLhcoreClassModelChatConfig::fetch('track_online_visitors')->current_value == 1) {
+            $vid = md5($tChat->bot_id . '_' . $tChat->tchat_id);
+            $userInstance = \erLhcoreClassModelChatOnlineUser::handleRequest(array(
+                'pages_count' => true,
+                'message_seen_timeout' => \erLhcoreClassModelChatConfig::fetch('message_seen_timeout')->current_value,
+                'vid' => $vid));
+
+            $userInstance->chat_id = $chat->id;
+            $userInstance->dep_id = $chat->dep_id;
+
+            if ($userInstance->visitor_tz == '') {
+                $userInstance->visitor_tz = $chat->user_tz_identifier;
+            }
+
+            $userInstance->updateThis(['update' => ['chat_id','dep_id','visitor_tz']]);
+
+            $chat->online_user_id = $userInstance->id;
+            $chat->updateThis(['update' => ['online_user_id']]);
+        }
+    }
+
+    public static function sendBotResponse($chat, $msg, $params = array()) {
+
         if ($chat->gbot_id > 0 && (!isset($chat->chat_variables_array['gbot_disabled']) || $chat->chat_variables_array['gbot_disabled'] == 0)) {
 
             $chat->refreshThis();
 
+            $lastMessageIdNew = $lastMessageId = $chat->last_msg_id;
+
             if (!isset($params['init']) || $params['init'] == false) {
-                \erLhcoreClassGenericBotWorkflow::userMessageAdded($chat, $msg);
+                if (isset($params['type']) && $params['type'] == 'payload' && $msg instanceof \erLhcoreClassModelmsg) {
+                    \erLhcoreClassGenericBotWorkflow::processButtonClick($chat, $msg, $params['payload'], array('processed' => false));
+                } else if (isset($params['type']) && $params['type'] == 'trigger' && $msg instanceof \erLhcoreClassModelmsg) {
+                    \erLhcoreClassGenericBotWorkflow::processTriggerClick($chat, $msg, $params['payload'], array('processed' => false));
+                } else {
+                    \erLhcoreClassGenericBotWorkflow::userMessageAdded($chat, $msg);
+                }
+            }
+
+            if (!isset($params['msg_last_id'])) {
+                $params['msg_last_id'] = $msg->id;
             }
 
             // Find a new messages
-            $botMessages = \erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $msg->id)));
+            $botMessages = \erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg_last_id'])));
             foreach ($botMessages as $botMessage) {
+
+                $lastMessageIdNew = $botMessage->id;
+
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
                     'chat' => & $chat,
                     'msg' => $botMessage
                 ));
             }
+
+            if ($lastMessageId < $lastMessageIdNew) {
+                $chat->last_msg_id = $lastMessageIdNew;
+                $chat->updateThis(['update' => ['last_msg_id']]);
+            }
         }
+
     }
 }

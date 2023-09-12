@@ -14,7 +14,7 @@ use Longman\TelegramBot\Commands\UserCommand;
 use Longman\TelegramBot\Request;
 use Longman\TelegramBot\Entities\InlineKeyboard;
 use Longman\TelegramBot\Entities\InlineKeyboardButton;
-
+use Longman\TelegramBot\Entities\ServerResponse;
 /**
  * User "/register" command
  *
@@ -48,7 +48,7 @@ class ChangeownerCommand extends UserCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         $message = $this->getMessage();
 
@@ -157,8 +157,6 @@ class ChangeownerCommand extends UserCommand
                     'text'    => 'Chat was transferred to:' . PHP_EOL . (string)$operatorDestination->name_official,
                 ];
 
-                Request::sendMessage($data);
-
                 $transferLegacy = \erLhcoreClassTransfer::getTransferByChat($chat->id);
 
                 if (is_array($transferLegacy)) {
@@ -177,7 +175,7 @@ class ChangeownerCommand extends UserCommand
 
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_owner_changed', array('chat' => & $chat, 'user' => $operatorDestination));
 
-                return ;
+                return Request::sendMessage($data);
             }
 
             $onlineOperators = \erLhcoreClassModelUser::getUserList();

@@ -11,6 +11,7 @@
 namespace Longman\TelegramBot\Commands\SystemCommands;
 
 use Longman\TelegramBot\Commands\SystemCommand;
+use Longman\TelegramBot\Entities\ServerResponse;
 
 /**
  * Super group chat created command
@@ -40,7 +41,7 @@ class SupergroupchatcreatedCommand extends SystemCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         //$message = $this->getMessage();
         //$supergroup_chat_created = $message->getSuperGroupChatCreated();

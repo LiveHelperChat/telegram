@@ -11,7 +11,7 @@
 namespace Longman\TelegramBot\Commands\SystemCommands;
 
 use Longman\TelegramBot\Commands\SystemCommand;
-
+use Longman\TelegramBot\Entities\ServerResponse;
 /**
  * Pinned message command
  *
@@ -40,7 +40,7 @@ class PinnedmessageCommand extends SystemCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         //$message = $this->getMessage();
         //$pinned_message = $message->getPinnedMessage();

@@ -667,12 +667,52 @@ class erLhcoreClassExtensionLhctelegram {
 
                     erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.make_plain_message', array('msg' => & $params['msg']->msg));
 
+                    $keyboardButtons = [];
+
+                    $metaMsg = $params['msg']->meta_msg_array;
+
+                    if (isset($metaMsg['content']['quick_replies']) && !empty($metaMsg['content']['quick_replies'])) {
+                        foreach ($metaMsg['content']['quick_replies'] as $quickReplyButton) {
+                            if ($quickReplyButton['type'] == 'trigger' || $quickReplyButton['type'] == 'button') {
+                                $keyboardButtons[] = [
+                                    'text' => $quickReplyButton['content']['name'],
+                                    'callback_data' => ($quickReplyButton['type'] == 'button' ?  'bpayload__||' : 'trigger__||') . $quickReplyButton['content']['payload']. '__' . md5($quickReplyButton['content']['name']) .'__'.$params['msg']->id
+                                ];
+                            } elseif ($quickReplyButton['type'] == 'url') {
+                                $keyboardButtons[] = [
+                                    'text' => $quickReplyButton['content']['name'],
+                                    'url' => $quickReplyButton['content']['payload']
+                                ];
+                            }
+
+                        }
+                    }
+
                     $data = [
                         'chat_id' => $tChat->tchat_id,
-                        'text'    => trim($params['msg']->msg) . $signatureText,
+                        'text'    => trim($params['msg']->msg) . $signatureText
                     ];
 
-                    Longman\TelegramBot\Request::sendMessage($data);
+                    if (!empty($keyboardButtons)) {
+                        $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard($keyboardButtons);
+                        $inline_keyboard->setOneTimeKeyboard(true);
+                        $inline_keyboard->setIsPersistent(false);
+                        $data['reply_markup'] = $inline_keyboard;
+                    }
+
+                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                    if ($sendData->isOk()) {
+                        $metaMsg['iwh_msg_id'] = $sendData->getResult()->getMessageId();
+
+                        $params['msg']->meta_msg_array = $metaMsg;
+                        $params['msg']->meta_msg = json_encode($metaMsg);
+                        $params['msg']->del_st = erLhcoreClassModelmsg::STATUS_READ;
+
+                        if ($params['msg']->id > 0) {
+                            $params['msg']->updateThis(['update' => ['meta_msg','del_st']]);
+                        }
+                    }
                 }
 
 	            foreach ($images['images'] as $image) {

@@ -14,6 +14,7 @@ use Longman\TelegramBot\Commands\SystemCommand;
 use Longman\TelegramBot\Entities\InlineQuery\InlineQueryResultArticle;
 use Longman\TelegramBot\Entities\InputMessageContent\InputTextMessageContent;
 use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Entities\ServerResponse;
 
 /**
  * Inline query command
@@ -43,7 +44,7 @@ class InlinequeryCommand extends SystemCommand
      * @return \Longman\TelegramBot\Entities\ServerResponse
      * @throws \Longman\TelegramBot\Exception\TelegramException
      */
-    public function execute()
+    public function execute(): ServerResponse
     {
         $inline_query = $this->getInlineQuery();
         $query        = $inline_query->getQuery();
