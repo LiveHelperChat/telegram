@@ -13,18 +13,9 @@
     </div>
 
     <div class="form-group">
-        <label><input type="checkbox" value="on" name="block_bot" <?php isset($t_options['block_bot']) && ($t_options['block_bot'] == true) ? print 'checked="checked"' : ''?> /> Block bot, chat will be never forwarded to bot</label><br/>
-    </div>
-
-    <div class="form-group">
         <label>Priority</label>
         <input class="form-control" type="text" name="priority" value="<?php (isset($t_options['priority'])) ? print htmlspecialchars($t_options['priority']) : print 0?>" />
         <p><i><small>Set what priority chat's should get. The lower the lower priority. Settings priority to (-1) will make them appear at the bottom of pending chats list.</small></i></p>
-    </div>
-
-    <div class="form-group">
-        <label><input type="checkbox" value="on" name="exclude_workflow" <?php isset($t_options['exclude_workflow']) && ($t_options['exclude_workflow'] == true) ? print 'checked="checked"' : ''?> /> Exclude chats from auto assign timeout workflow.</label>
-        <p><i><small>Chat's won't participate in "Chats waiting in pending queue more than n seconds should be auto-assigned first."</small></i></p>
     </div>
 
     <div class="form-group">

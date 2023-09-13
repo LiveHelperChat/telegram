@@ -11,12 +11,6 @@ if ( isset($_POST['StoreOptions']) ) {
         'new_chat' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
         ),
-        'block_bot' => new ezcInputFormDefinitionElement(
-            ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
-        ),
-        'exclude_workflow' => new ezcInputFormDefinitionElement(
-            ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
-        ),
         'priority' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'int'
         ),
@@ -32,18 +26,6 @@ if ( isset($_POST['StoreOptions']) ) {
         $data['new_chat'] = 1;
     } else {
         $data['new_chat'] = 0;
-    }
-
-    if ( $form->hasValidData( 'block_bot' ) && $form->block_bot == true ) {
-        $data['block_bot'] = 1;
-    } else {
-        $data['block_bot'] = 0;
-    }
-
-    if ( $form->hasValidData( 'exclude_workflow' ) && $form->exclude_workflow == true ) {
-        $data['exclude_workflow'] = 1;
-    } else {
-        $data['exclude_workflow'] = 0;
     }
 
     if ( $form->hasValidData( 'chat_attr' ) && $form->chat_attr == true ) {
