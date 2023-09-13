@@ -44,6 +44,11 @@ $def->properties['chat_timeout']->columnName   = 'chat_timeout';
 $def->properties['chat_timeout']->propertyName = 'chat_timeout';
 $def->properties['chat_timeout']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_INT;
 
+$def->properties['group_chat_id'] = new ezcPersistentObjectProperty();
+$def->properties['group_chat_id']->columnName   = 'group_chat_id';
+$def->properties['group_chat_id']->propertyName = 'group_chat_id';
+$def->properties['group_chat_id']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_INT;
+
 return $def;
 
 ?>

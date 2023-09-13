@@ -20,7 +20,8 @@ class erLhcoreClassModelTelegramChat
             'tchat_id' => $this->tchat_id,
             'chat_id' => $this->chat_id,
             'ctime' => $this->ctime,
-            'utime' => $this->utime
+            'utime' => $this->utime,
+            'type' => $this->type
         );
     }
 
@@ -60,6 +61,10 @@ class erLhcoreClassModelTelegramChat
     public $ctime = null;
     
     public $utime = null;
+
+    // 0 - Standard chat
+    // 1 - Topic chat Bot As Client
+    public $type = 0;
 
 }
 

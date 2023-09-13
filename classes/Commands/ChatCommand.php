@@ -68,50 +68,43 @@ class ChatCommand extends UserCommand
 
         $text = (int)trim($message->getText(true));
 
-        $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tchat_id' => $chat_id, 'confirmed' => 1, 'bot_id' => $tBot->id)));
+        $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tuser_id' => $message->getFrom()->getId(), 'confirmed' => 1, 'bot_id' => $tBot->id)));
 
         if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
 
-            if ($text > 0) {
-                $chat = \erLhcoreClassModelChat::fetch($text);
-            } else if ($operator->chat_id > 0) {
-                $chat = \erLhcoreClassModelChat::fetch($operator->chat_id);
-            }
+            foreach (\erLhcoreClassModelTelegramChat::getList(['filter' => ['bot_id' => $tBot->id, 'tchat_id' => $message->getMessageThreadId(), 'type' => 1]]) as $tchat) {
 
-            if (!($chat instanceof \erLhcoreClassModelChat)) {
+               $chat = $tchat->chat;
+
+                if (!($chat instanceof \erLhcoreClassModelChat)) {
+                    $data = [
+                        'chat_id' => $chat_id,
+                        'text'    => "Chat could not be found!",
+                    ];
+                    Request::sendMessage($data);
+                    continue;
+                }
+
+                $commands = [];
+                if ($chat->user_id == 0){
+                    $commands[] = ['text' => 'Accept Chat', 'callback_data' => 'accept_chat||' . $chat->id];
+                } else {
+                    $commands[] = ['text' => 'Change owner to me', 'callback_data' => 'take_over_chat||' . $chat->id];
+                }
+
+                $inline_keyboard = new InlineKeyboard($commands);
+
                 $data = [
                     'chat_id' => $chat_id,
-                    'text'    => "Chat could not be found!",
+                    'message_thread_id' => $tchat->tchat_id,
+                    'text'    => "Operator: ". (string)$chat->n_off_full . " [{$chat->user_id}] " . $chat->id,
+                    'reply_markup' => $inline_keyboard,
                 ];
-                return Request::sendMessage($data);
+
+                Request::sendMessage($data);
             }
 
-            $messagesContent = '';
-
-            if ($text > 0){
-                $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
-                foreach ($messages as $msg ) {
-                    if ($msg->user_id == -1) {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
-                    } else {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
-                    }
-                }
-                $messagesContent = PHP_EOL . "Chat messages. " . PHP_EOL . $messagesContent;
-            }
-
-
-            $inline_keyboard = new InlineKeyboard([
-                ['text' => 'Change owner', 'callback_data' => 'replycommand||changeowner||' . $chat->id]
-            ]);
-
-            $data = [
-                'chat_id' => $chat_id,
-                'text'    => "Operator: ". (string)$chat->n_off_full . " \[{$chat->user_id}] " . $chat->id . '' .$messagesContent,
-                 'reply_markup' => $inline_keyboard,
-            ];
-
-            return Request::sendMessage($data);
+            return Request::emptyResponse();
 
         } else {
             $data = [

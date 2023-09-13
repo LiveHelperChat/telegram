@@ -22,7 +22,8 @@ class erLhcoreClassModelTelegramBot
             'dep_id' => $this->dep_id,
             'bot_client' => $this->bot_client,
             'chat_timeout' => $this->chat_timeout,
-            'bot_disabled' => $this->bot_disabled
+            'bot_disabled' => $this->bot_disabled,
+            'group_chat_id' => $this->group_chat_id
         );
     }  
 
@@ -81,6 +82,7 @@ class erLhcoreClassModelTelegramBot
     public $webhook_set = 0;
 
     public $bot_disabled = 0;
+    public $group_chat_id = 0;
 
     public $chat_timeout = 259200;
 }

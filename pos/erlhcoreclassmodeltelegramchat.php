@@ -34,6 +34,11 @@ $def->properties['utime']->columnName   = 'utime';
 $def->properties['utime']->propertyName = 'utime';
 $def->properties['utime']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_INT;
 
+$def->properties['type'] = new ezcPersistentObjectProperty();
+$def->properties['type']->columnName   = 'type';
+$def->properties['type']->propertyName = 'type';
+$def->properties['type']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_INT;
+
 return $def;
 
 ?>

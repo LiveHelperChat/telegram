@@ -51,6 +51,8 @@ class CallbackqueryCommand extends SystemCommand
         $callback_query_id = $callback_query->getId();
         $callback_data     = $callback_query->getData();
 
+        $message = $callback_query->getMessage();
+
         $paramsCallback = explode('||',$callback_data);
 
         $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
@@ -96,68 +98,6 @@ class CallbackqueryCommand extends SystemCommand
                 return Request::sendMessage($data);
             }
 
-
-        } else if ($paramsCallback[0] == 'switch_chat') {
-
-            $chat = \erLhcoreClassModelChat::fetch($paramsCallback[1]);
-
-            $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('bot_id' => $tBot->id, 'confirmed' => 1, 'tuser_id' => $callback_query->getFrom()->getId())));
-
-            if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
-
-                if ($operator->chat_id != $chat->id) {
-                    $operator->chat_id = $chat->id;
-                    $operator->saveThis();
-
-                    $variablesArray = $chat->chat_variables_array;
-
-                    if (!is_array($variablesArray)) {
-                        $variablesArray = array();
-                    }
-
-                    if (!isset($variablesArray['telegram_chat_op']) || $operator->id != $variablesArray['telegram_chat_op']) {
-                        $variablesArray['telegram_chat_op'] = $operator->id;
-                        $chat->chat_variables = json_encode($variablesArray);
-                        $chat->chat_variables_array = $variablesArray;
-                        $chat->saveThis();
-                    }
-
-                    $data = [
-                        'callback_query_id' => $callback_query_id,
-                        'text'              => 'Chat was activated!',
-                        'show_alert'        => false,
-                        'cache_time'        => 5,
-                    ];
-
-                    Request::answerCallbackQuery($data);
-
-                    $data = [
-                        'chat_id' => $callback_query->getFrom()->getId(),
-                        'text'    => "Active chat switched to [{$chat->id}] \"{$chat->nick}\"! You now can just type and message will be send to \"{$chat->nick}\" To get your active chats type /chats",
-                    ];
-
-                    return Request::sendMessage($data);
-
-                } else {
-
-                    $data = [
-                        'callback_query_id' => $callback_query_id,
-                        'text'              => 'This chat is already assigned to you!',
-                        'show_alert'        => false,
-                        'cache_time'        => 5,
-                    ];
-
-                    return Request::answerCallbackQuery($data);
-                }
-
-            } else {
-                $data = [
-                    'chat_id' => $callback_query->getFrom()->getId(),
-                    'text'    => 'Operator could not be found!',
-                ];
-
-                return Request::sendMessage($data);
-            }
 
         } else if ($paramsCallback[0] == 'replycommand') {
 
@@ -228,24 +168,13 @@ class CallbackqueryCommand extends SystemCommand
 
                 Request::answerCallbackQuery($data);
 
-                $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
-                $messagesContent = '';
-
-                foreach ($messages as $msg ) {
-                    if ($msg->user_id == -1) {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
-                    } else {
-                        $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
-                    }
-                }
-
                 $data = [
-                    'chat_id' => $callback_query->getFrom()->getId(),
-                    'text'    => 'Chat was taken over accepted! Chat content:' . PHP_EOL . $messagesContent,
+                    'chat_id' => $tBot->group_chat_id,
+                    'message_thread_id' => $message->getMessageThreadId(),
+                    'text'    => 'Chat was taken over accepted!',
                 ];
 
                 Request::sendMessage($data);
-
             }
 
         } else if ($paramsCallback[0] == 'accept_chat') {
@@ -261,14 +190,14 @@ class CallbackqueryCommand extends SystemCommand
             {
                 $transfer = \erLhcoreClassModelTransfer::findOne(array('filter' => array('chat_id' => $chat->id, 'transfer_to_user_id' => $operator->user_id)));
             }
-            
+
             if ($transfer instanceof \erLhcoreClassModelTransfer || $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT || ($chat->status == \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT && $operator instanceof \erLhcoreClassModelTelegramOperator && $operator->user_id == $chat->user_id)) {
 
                 $wasPending = $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT;
 
                 $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
                 $chat->status_sub = \erLhcoreClassModelChat::STATUS_SUB_OWNER_CHANGED;
-                
+
                 if ($chat->wait_time == 0) {
                     $chat->wait_time = time() - $chat->time;
                 }
@@ -330,20 +259,10 @@ class CallbackqueryCommand extends SystemCommand
 
                     Request::answerCallbackQuery($data);
 
-                    $messages = array_reverse(\erLhcoreClassModelmsg::getList(array('limit' => 10,'sort' => 'id DESC','filter' => array('chat_id' => $chat->id))));
-                    $messagesContent = '';
-
-                    foreach ($messages as $msg ) {
-                        if ($msg->user_id == -1) {
-                            $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. \erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmin','System assistant').': '.htmlspecialchars($msg->msg)."\n";
-                        } else {
-                            $messagesContent .= date(\erLhcoreClassModule::$dateHourFormat,$msg->time).' '. ($msg->user_id == 0 ? htmlspecialchars($chat->nick) : htmlspecialchars($msg->name_support)).': '.htmlspecialchars($msg->msg)."\n";
-                        }
-                    }
-
                     $data = [
-                        'chat_id' => $callback_query->getFrom()->getId(),
-                        'text'    => 'Chat was accepted! Chat content:' . PHP_EOL . $messagesContent,
+                        'chat_id' => $tBot->group_chat_id,
+                        'message_thread_id' => $message->getMessageThreadId(),
+                        'text'    => 'Chat was accepted!',
                     ];
 
                     Request::sendMessage($data);

@@ -51,6 +51,9 @@ class HelpCommand extends UserCommand
         $chat_id     = $message->getChat()->getId();
         $command_str = trim($message->getText(true));
 
+        $telegramExt = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+        $tBot = $telegramExt->getBot();
+
         // Admin commands shouldn't be shown in group chats
         $safe_to_show = $message->getChat()->isPrivateChat();
 
@@ -76,6 +79,11 @@ class HelpCommand extends UserCommand
 
             $data['text'] .= PHP_EOL . 'For exact command help type: /help <command>';
 
+            if (is_numeric($message->getMessageThreadId())) {
+                $data['chat_id'] = $tBot->group_chat_id;
+                $data['message_thread_id'] = $message->getMessageThreadId();
+            }
+
             return Request::sendMessage($data);
         }
 
@@ -96,6 +104,11 @@ class HelpCommand extends UserCommand
         }
 
         $data['text'] = 'No help available: Command /' . $command_str . ' not found';
+
+        if (is_numeric($message->getMessageThreadId())) {
+            $data['chat_id'] = $tBot->group_chat_id;
+            $data['message_thread_id'] = $message->getMessageThreadId();
+        }
 
         return Request::sendMessage($data);
     }

@@ -175,7 +175,6 @@ class GenericmessageCommand extends SystemCommand
      */
     public function execute(): ServerResponse
     {
-
         $message = $this->getMessage();
         $chat_id = $message->getChat()->getId();
         $type = $message->getType();
@@ -195,13 +194,13 @@ class GenericmessageCommand extends SystemCommand
 
         if ($tBot->bot_client == 1) {
 
-            $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tchat_id' => $chat_id, 'confirmed' => 1, 'bot_id' => $tBot->id)));
+            $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tuser_id' => $message->getFrom()->getId(), 'confirmed' => 1, 'bot_id' => $tBot->id)));
 
             if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
 
-                if ($operator->chat_id > 0) {
+                foreach (\erLhcoreClassModelTelegramChat::getList(['filter' => ['bot_id' => $tBot->id, 'tchat_id' => $message->getMessageThreadId(), 'type' => 1]]) as $tchat) {
 
-                    $chat = $operator->chat;
+                    $chat = $tchat->chat;
 
                     if ($chat instanceof \erLhcoreClassModelChat) {
 
@@ -236,7 +235,7 @@ class GenericmessageCommand extends SystemCommand
 
                                 $rawMessage = !isset($statusCommand['raw_message']) ? $text : $statusCommand['raw_message'];
 
-                                $text = '[b]' . $operator->user->name_support . '[/b]: ' . $rawMessage . ' ' . ($statusCommand['process_status'] != '' ? '|| ' . $statusCommand['process_status'] : '');
+                                $text = '[' . $operator->user->name_support . ']: ' . $rawMessage . ' ' . ($statusCommand['process_status'] != '' ? '|| ' . $statusCommand['process_status'] : '');
                             }
 
                             if (isset($statusCommand['ignore']) && $statusCommand['ignore'] == true) {
@@ -246,8 +245,10 @@ class GenericmessageCommand extends SystemCommand
                             if (isset($statusCommand['info'])) {
                                 $data = [
                                     'chat_id' => $chat_id,
+                                    'message_thread_id' => $message->getMessageThreadId(),
                                     'text'    => '[[System Assistant]] ' . $statusCommand['info'],
                                 ];
+
                                 return Request::sendMessage($data);
                             }
                         }
@@ -295,44 +296,33 @@ class GenericmessageCommand extends SystemCommand
                                 'chat' => & $chat
                             ));
 
-                            // General module signal that it has received an sms
-                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_received', array(
-                                'chat' => & $chat,
-                                'msg' => & $msg,
-                                'sender' => 'bot_client'
-                            ));
-
                             if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
                                 $data = [
                                     'chat_id' => $chat_id,
-                                    'text'    => "You send a message to a closed chat!",
+                                    'message_thread_id' => $message->getMessageThreadId(),
+                                    'text'    => "You sent a message to a closed chat!",
                                 ];
-
                                 return Request::sendMessage($data);
                             }
+
                         }
 
                     } else {
                         $data = [
                             'chat_id' => $chat_id,
+                            'message_thread_id' => $message->getMessageThreadId(),
                             'text'    => "Chat could not be found!",
                         ];
 
                         return Request::sendMessage($data);
                     }
-
-                } else {
-                    $data = [
-                        'chat_id' => $chat_id,
-                        'text'    => "You do not have any chat associated with your account!",
-                    ];
-                    return Request::sendMessage($data);
                 }
 
-            } else {
+            } elseif ($type != 'forum_topic_created') {
                 $data = [
                     'chat_id' => $chat_id,
-                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat",
+                    'message_thread_id' => $message->getMessageThreadId(),
+                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat NEW" . $type,
                 ];
                 return Request::sendMessage($data);
             }
@@ -344,7 +334,8 @@ class GenericmessageCommand extends SystemCommand
                 ),
                 'filter' => array(
                     'tchat_id' => $chat_id,
-                    'bot_id' => $tBot->id
+                    'bot_id' => $tBot->id,
+                    'type' => 0
                 )
             ));
 

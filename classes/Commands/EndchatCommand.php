@@ -63,13 +63,12 @@ class EndchatCommand extends UserCommand
             return Request::sendMessage($data);
         }
 
-        $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tchat_id' => $chat_id, 'confirmed' => 1, 'bot_id' => $tBot->id)));
+        $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tuser_id' => $message->getFrom()->getId(), 'confirmed' => 1, 'bot_id' => $tBot->id)));
 
         if ($operator instanceof \erLhcoreClassModelTelegramOperator) {
 
-            if ($operator->chat_id > 0) {
-
-                $chat = \erLhcoreClassModelChat::fetch($operator->chat_id);
+            foreach (\erLhcoreClassModelTelegramChat::getList(['filter' => ['bot_id' => $tBot->id, 'tchat_id' => $message->getMessageThreadId(), 'type' => 1]]) as $tchat) {
+                $chat = $tchat->chat;
 
                 if ($chat instanceof \erLhcoreClassModelChat) {
 
@@ -83,28 +82,24 @@ class EndchatCommand extends UserCommand
 
                     $data = [
                         'chat_id' => $chat_id,
+                        'message_thread_id' => $tchat->tchat_id,
                         'text'    => 'Chat was closed! To list your chats type /chats',
                     ];
 
-                    return Request::sendMessage($data);
+                    Request::sendMessage($data);
 
                 } else {
                     $data = [
                         'chat_id' => $chat_id,
+                        'message_thread_id' => $tchat->tchat_id,
                         'text'    => 'Active chat could not be found!',
                     ];
 
-                    return Request::sendMessage($data);
+                    Request::sendMessage($data);
                 }
-
-            } else {
-                $data = [
-                    'chat_id' => $chat_id,
-                    'text'    => 'You do not have any active chat!',
-                ];
-
-                return Request::sendMessage($data);
             }
+
+            return Request::emptyResponse();
 
         } else {
             $data = [

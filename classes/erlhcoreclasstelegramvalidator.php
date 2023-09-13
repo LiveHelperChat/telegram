@@ -115,6 +115,7 @@ class erLhcoreClassTelegramValidator
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
+            'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
 
         $form = new ezcInputForm(INPUT_POST, $definition);
@@ -123,6 +124,12 @@ class erLhcoreClassTelegramValidator
             $item->bot_client = 1;
         } else {
             $item->bot_client = 0;
+        }
+
+        if ($form->hasValidData('group_chat_id')) {
+            $item->group_chat_id = $form->group_chat_id;
+        } else {
+            $item->group_chat_id = 0;
         }
 
         $db = ezcDbInstance::get();
