@@ -36,16 +36,16 @@ This allows to use bot as gateway between normal chats on your page and bot chat
 
 Example of final setup. Each customer get's it's own topic. and you can use telegram to chat with your customers directly. Files are also supported!
 
-![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/doc/img/topic-chats.png)
+![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/topic-chats.png)
 
 1. After you have completed the above steps, you have to do the following changes: In LHC back office, go back to the bot editing page and choose the departments tab. Check the departments you want to receive new chats notifications for. Don't save yet.
 2. Create a group chat in telegram and add your bot as an admin in the group chat.
-3. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/doc/img/bot-as-admin.png) 
+3. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/bot-as-admin.png) 
 4. Modify group chat settings and enable topics. Each customer will get it's own topic.
-   1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/doc/img/manage-group.png)
-   2. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/doc/img/enable-topics.png)
+   1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/manage-group.png)
+   2. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/enable-topics.png)
 5. Create a dummy topic and send a dummy message and copy url.
-   1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/doc/img/copylink.png)
+   1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/copylink.png)
 6. Your link will look like `https://t.me/c/1634340846/3/4` and your group id will be middle number `1634340846` with appended `-100` so it will be like `-1001634340846` as concat string `-100` + `1634340846`
 7. In same tab, check the "This bot acts as a client" box. Now save.
 8. You can try now to run from command like `php cron.php -s site_admin -e lhctelegram -c cron/test` it will try to create a dummy topic as a bot. Please modify `extension/lhctelegram/modules/lhcron/test.php` and put your API key and bot username before running a script.
@@ -53,7 +53,7 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 10. Now start a conversation in Telegram and register yourself within bot by typing `/register <id>`. The `<id>` should be registered operator id from the very first column in the operators list in LHC Modules => Telegram Settings => Telegram operators.
 11. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 12. That's all. Just type /help to see what available commands are supported.
-    
+
 ## Tip
 If you are planning only using telegram to support your site visitors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
 
