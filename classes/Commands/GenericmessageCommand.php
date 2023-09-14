@@ -302,10 +302,60 @@ class GenericmessageCommand extends SystemCommand
                                     'message_thread_id' => $message->getMessageThreadId(),
                                     'text'    => "You sent a message to a closed chat!",
                                 ];
-                                return Request::sendMessage($data);
+                                Request::sendMessage($data);
                             }
 
+                            if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
+
+                                $userData = $operator->user;
+
+                                if ($userData->invisible_mode == 0) {
+                                    $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
+
+                                    $chat->pnd_time = time();
+                                    $chat->wait_time = 1;
+
+                                    $chat->user_id = $operator->user_id;
+
+                                    // User status in event of chat acceptance
+                                    $chat->usaccept = $userData->hide_online;
+                                    $chat->operation_admin .= "lhinst.updateVoteStatus(".$chat->id.");";
+                                    $chat->saveThis();
+
+                                    // If chat is transferred to pending state we don't want to process any old events
+                                    $eventPending = \erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
+
+                                    if ($eventPending instanceof \erLhcoreClassModelGenericBotChatEvent) {
+                                        $eventPending->removeThis();
+                                    }
+
+                                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.data_changed',array('chat' => & $chat, 'user_data' => $userData ));
+
+                                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.accept',array('chat' => & $chat, 'user_data' => $userData ));
+
+                                    \erLhcoreClassChat::updateActiveChats($chat->user_id);
+
+                                    if ($chat->department !== false) {
+                                        \erLhcoreClassChat::updateDepartmentStats($chat->department);
+                                    }
+
+                                    $options = $chat->department->inform_options_array;
+
+                                    \erLhcoreClassChatWorkflow::chatAcceptedWorkflow(array('department' => $chat->department,'options' => $options),$chat);
+
+                                    $data = [
+                                        'chat_id' => $chat_id,
+                                        'message_thread_id' => $message->getMessageThreadId(),
+                                        'parse_mode' => 'HTML',
+                                        'text'    => "<b>[System assistant]</b> <i>" . htmlspecialchars($userData->name_official) ."</i> was assigned as a chat operator! Type /chat for more information.",
+                                    ];
+
+                                    Request::sendMessage($data);
+                                }
+                            }
                         }
+
+                        return Request::emptyResponse();
 
                     } else {
                         $data = [
