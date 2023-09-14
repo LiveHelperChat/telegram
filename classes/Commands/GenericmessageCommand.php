@@ -271,6 +271,11 @@ class GenericmessageCommand extends SystemCommand
                             $stmt->bindValue(':has_unread_op_messages',1,\PDO::PARAM_INT);
                             $stmt->bindValue(':unread_op_messages_informed',0,\PDO::PARAM_INT);
 
+                            $chat->last_msg_id = $msg->id;
+                            $chat->last_op_msg_time = time();
+                            $chat->has_unread_op_messages = 1;
+                            $chat->unread_op_messages_informed = 0;
+
                             if ($operator->user->invisible_mode == 0) { // Change status only if it's not internal command
                                 if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
