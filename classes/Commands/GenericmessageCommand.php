@@ -276,30 +276,19 @@ class GenericmessageCommand extends SystemCommand
                             $chat->has_unread_op_messages = 1;
                             $chat->unread_op_messages_informed = 0;
 
+                            $ownerChanged = false;
                             if ($operator->user->invisible_mode == 0) { // Change status only if it's not internal command
                                 if ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
                                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                                     $chat->user_id = $operator->user_id;
+                                    $ownerChanged = true;
                                 }
                             }
 
                             $stmt->bindValue(':user_status',$chat->user_status,\PDO::PARAM_INT);
                             $stmt->bindValue(':status',$chat->status,\PDO::PARAM_INT);
                             $stmt->execute();
-
-                            // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
-                            // This allows NodeJS users to know about new message. In this particular case it's admin users
-                            // If operator has opened chat instantly sync
-                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
-                                'chat' => & $chat,
-                                'msg' => & $msg
-                            ));
-
-                            // If operator has closed a chat we need force back office sync
-                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
-                                'chat' => & $chat
-                            ));
 
                             if ($chat->status == \erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
                                 $data = [
@@ -310,11 +299,12 @@ class GenericmessageCommand extends SystemCommand
                                 Request::sendMessage($data);
                             }
 
-                            if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
+                            if ($ownerChanged === true || $chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT) {
 
                                 $userData = $operator->user;
 
                                 if ($userData->invisible_mode == 0) {
+
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
 
                                     $chat->pnd_time = time();
@@ -324,7 +314,7 @@ class GenericmessageCommand extends SystemCommand
 
                                     // User status in event of chat acceptance
                                     $chat->usaccept = $userData->hide_online;
-                                    $chat->operation_admin .= "lhinst.updateVoteStatus(".$chat->id.");";
+                                    $chat->operation_admin = "lhinst.updateVoteStatus(".$chat->id.");";
                                     $chat->saveThis();
 
                                     // If chat is transferred to pending state we don't want to process any old events
@@ -354,10 +344,24 @@ class GenericmessageCommand extends SystemCommand
                                         'parse_mode' => 'HTML',
                                         'text'    => "<b>[System assistant]</b> <i>" . htmlspecialchars($userData->name_official) ."</i> was assigned as a chat operator! Type /chat for more information.",
                                     ];
-
                                     Request::sendMessage($data);
                                 }
                             }
+
+                            // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
+                            // This allows NodeJS users to know about new message. In this particular case it's admin users
+                            // If operator has opened chat instantly sync
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
+                                'chat' => & $chat,
+                                'msg' => & $msg
+                            ));
+
+                            // If operator has closed a chat we need force back office sync
+                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
+                                'chat' => & $chat
+                            ));
+
+
                         }
 
                         return Request::emptyResponse();
