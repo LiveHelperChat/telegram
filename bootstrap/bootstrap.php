@@ -55,7 +55,7 @@ class erLhcoreClassExtensionLhctelegram {
 
 		$dispatcher->listen('chat.web_add_msg_admin', array(
 		    $this,
-		    'messageAdded'
+		    'messageAddedAdmin'
 		));
 
         $dispatcher->listen('chat.addmsguser', array(
@@ -287,6 +287,12 @@ class erLhcoreClassExtensionLhctelegram {
         }
     }
 
+	public function messageAddedAdmin($params) {
+        if ($params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand') {
+            return;
+        }
+        $this->messageAdded($params);
+    }
 	public function messageAdded($params)
     {
         $chat = $params['chat'];
@@ -476,8 +482,7 @@ class erLhcoreClassExtensionLhctelegram {
 	public function sendMessageToTelegram($params)
 	{
 	    $chatVariables = $params['chat']->chat_variables_array;
-	    
-	    
+
 	    // It's SMS chat we need to send a message
 	    if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == true) {
 	        
