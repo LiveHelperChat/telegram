@@ -63,6 +63,11 @@ class erLhcoreClassExtensionLhctelegram {
             'messageAdded'
         ));
 
+        $dispatcher->listen('chat.messages_added_passive', array(
+            $this,
+            'messageAdded'
+        ));
+
         $dispatcher->listen('chat.genericbot_get_trigger_click_processed', array(
             $this,
             'triggerClicked'
