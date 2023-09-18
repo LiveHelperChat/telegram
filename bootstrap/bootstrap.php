@@ -22,6 +22,11 @@ class erLhcoreClassExtensionLhctelegram
             'sendMessageToTelegram'
         ));
 
+        $dispatcher->listen('chat.before_auto_responder_msg_saved', array(
+            $this,
+            'sendMessageToTelegram'
+        ));
+
         $dispatcher->listen('chat.desktop_client_admin_msg', array(
             $this,
             'sendMessageToTelegram'
@@ -60,6 +65,11 @@ class erLhcoreClassExtensionLhctelegram
         $dispatcher->listen('chat.web_add_msg_admin', array(
             $this,
             'messageAddedAdmin'
+        ));
+
+        $dispatcher->listen('chat.before_auto_responder_msg_saved', array(
+            $this,
+            'messageAdded'
         ));
 
         $dispatcher->listen('chat.addmsguser', array(
