@@ -307,6 +307,11 @@ class erLhcoreClassExtensionLhctelegram
         if ($params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand') {
             return;
         }
+
+        if (isset($params['source']) && $params['source'] == 'webhook') {
+            return;
+        }
+
         $this->messageAdded($params);
     }
 
