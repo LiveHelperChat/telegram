@@ -565,7 +565,6 @@ class erLhcoreClassExtensionLhctelegram
                                     'url' => $quickReplyButton['content']['payload']
                                 ];
                             }
-
                         }
                     }
 
@@ -575,10 +574,12 @@ class erLhcoreClassExtensionLhctelegram
                     ];
 
                     if (!empty($keyboardButtons)) {
-                        $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard($keyboardButtons);
-                        $inline_keyboard->setOneTimeKeyboard(true);
-                        $inline_keyboard->setIsPersistent(false);
-                        $data['reply_markup'] = $inline_keyboard;
+                        $max_per_row  = 2; // or however many you want!
+                        $per_row      = sqrt(count($keyboardButtons));
+                        $rows         = array_chunk($keyboardButtons, $per_row === floor($per_row) ? $per_row : $max_per_row);
+                        $keyboard = new Longman\TelegramBot\Entities\InlineKeyboard(...$rows);
+                        $keyboard->setResizeKeyboard(true);
+                        $data['reply_markup'] = $keyboard;
                     }
 
                     $sendData = Longman\TelegramBot\Request::sendMessage($data);
