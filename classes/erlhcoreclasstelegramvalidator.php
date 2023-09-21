@@ -121,8 +121,14 @@ class erLhcoreClassTelegramValidator
         $form = new ezcInputForm(INPUT_POST, $definition);
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {
+            if ($item->bot_client != 1) {
+                $item->webhook_set = 0;
+            }
             $item->bot_client = 1;
         } else {
+            if ($item->bot_client != 0) {
+                $item->webhook_set = 0;
+            }
             $item->bot_client = 0;
         }
 

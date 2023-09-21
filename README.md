@@ -27,9 +27,10 @@ cd extension/lhctelegram && composer.phar update
     php cron.php -s site_admin -e lhctelegram -c cron/update_structure
     ```
 7. Register your bot with https://core.telegram.org/bots#6-botfather
-8. Create bot in LHC back office under Modules => Telegram Settings.
-9. After creating bot, go back and just click. "Set webhook"
-10. That's it.
+8. In telegram Options activate webhook configurations
+9. Create bot in LHC back office under Modules => Telegram Settings.
+10. After creating bot, go back and just click. "Set webhook"
+11. That's it.
 
 ## Telegram as Support Client
 This allows to use bot as gateway between normal chats on your page and bot chatting with you as a operator. In other words you can use Telegram mobile and desktop clients as Live Helper Chat support clients.

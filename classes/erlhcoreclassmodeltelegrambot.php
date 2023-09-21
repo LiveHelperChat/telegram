@@ -37,10 +37,17 @@ class erLhcoreClassModelTelegramBot
         switch ($var) {
                 
             case 'callback_url':
-                $this->callback_url = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurldirect('telegram/callback'). '/' . $this->id;
+                if ($this->bot_client == 1) {
+                    $this->callback_url = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurldirect('telegram/callback'). '/' . $this->id;
+                } else {
+                    $this->callback_url = null;
+                    $callbackData = erLhcoreClassModelChatIncomingWebhook::findOne(['filter' => ['name' => 'TelegramIntegration']]);
+                    if (is_object($callbackData)) {
+                        $this->callback_url = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect('webhooks/incoming') . '/' . $callbackData->identifier . '?telegram_bot_id=' . $this->id;
+                    }
+                }
                 return $this->callback_url;
-                break;
-                
+
             default:
                 ;
                 break;

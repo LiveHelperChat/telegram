@@ -309,37 +309,6 @@ class CallbackqueryCommand extends SystemCommand
                 Request::sendMessage($data);
             }
 
-        } elseif ($paramsCallback[0] == 'bpayload__' || $paramsCallback[0] == 'trigger__') {
-
-            /*$data = [
-                'callback_query_id' => $callback_query_id,
-                'text'              => 'Thanks!',
-                'show_alert'        => $callback_data === 'thumb up',
-                'cache_time'        => 1,
-            ];
-
-            Request::answerCallbackQuery($data);*/
-
-            $payloadParts = explode('__',$paramsCallback[1]);
-
-            $message = \erLhcoreClassModelmsg::fetch($payloadParts[2]);
-
-            $chat = \erLhcoreClassModelChat::fetch($message->chat_id);
-
-            \Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand::sendBotResponse($chat, $message, array(
-                'type' => ($paramsCallback[0] == 'bpayload__' ? 'payload' : 'trigger'),
-                'payload' => $payloadParts[0] . '__' . $payloadParts[1],
-                'msg_last_id' => $chat->last_msg_id // Message visitor is clicking is not necessary the last message
-            ));
-
-            return Request::send('editMessageReplyMarkup',[
-                'chat_id' => $callback_query->getFrom()->getId(),
-                'message_id' => $message->meta_msg_array['iwh_msg_id'],
-                'reply_markup' => null
-            ]);
-
-            return Request::emptyResponse();
-
         } else {
             $data = [
                 'callback_query_id' => $callback_query_id,
@@ -358,5 +327,6 @@ class CallbackqueryCommand extends SystemCommand
             return Request::sendMessage($data);
         }
 
+        return Request::emptyResponse();
     }
 }

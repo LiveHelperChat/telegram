@@ -17,26 +17,6 @@ class erLhcoreClassExtensionLhctelegram
 
         $dispatcher = erLhcoreClassChatEventDispatcher::getInstance();
 
-        $dispatcher->listen('chat.web_add_msg_admin', array(
-            $this,
-            'sendMessageToTelegram'
-        ));
-
-        $dispatcher->listen('chat.before_auto_responder_msg_saved', array(
-            $this,
-            'sendMessageToTelegram'
-        ));
-
-        $dispatcher->listen('chat.desktop_client_admin_msg', array(
-            $this,
-            'sendMessageToTelegram'
-        ));
-
-        $dispatcher->listen('chat.workflow.canned_message_before_save', array(
-            $this,
-            'sendMessageToTelegram'
-        ));
-
         $dispatcher->listen('chat.delete', array(
             $this,
             'deleteChat'
@@ -87,27 +67,6 @@ class erLhcoreClassExtensionLhctelegram
             'triggerClicked'
         ));
 
-        // Elastic Search
-        $dispatcher->listen('system.getelasticstructure', array(
-                $this, 'getElasticStructure')
-        );
-
-        $dispatcher->listen('elasticsearch.indexchat', array(
-                $this, 'indexChat')
-        );
-
-        $dispatcher->listen('elasticsearch.getstate', array(
-                $this, 'getState')
-        );
-
-        $dispatcher->listen('elasticsearch.getpreviouschats', array(
-                $this, 'getPreviousChatsFilter')
-        );
-
-        $dispatcher->listen('elasticsearch.getpreviouschats_abstract', array(
-                $this, 'getPreviousChatsFilter')
-        );
-
         // Handle canned messages custom workflow
         $dispatcher->listen('chat.canned_msg_before_save', array(
                 $this, 'cannedMessageValidate')
@@ -121,45 +80,108 @@ class erLhcoreClassExtensionLhctelegram
                 $this, 'cannedMessageReplace')
         );
 
-        $dispatcher->listen('elasticsearch.chatsearchattr', array(
-                $this, 'appendSearchAttr')
+        $dispatcher->listen('chat.incoming_dynamic_array', array(
+            $this,'incomingChatDynamicArray')
         );
 
-        $dispatcher->listen('elasticsearch.chatsearchexecute', array(
-                $this, 'chatSearchExecute')
-        );
-    }
-
-    public static function appendSearchAttr($params)
-    {
-        $extTel = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
-
-        $params['attr']['filterAttributes'][$extTel->settings['elastic_search']['search_attr']] = array(
-            'type' => 'text',
-            'required' => false,
-            'valid_if_filled' => false,
-            'filter_type' => 'filter',
-            'filter_table_field' => $extTel->settings['elastic_search']['search_attr'],
-            'validation_definition' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
-            )
+        $dispatcher->listen('chat.webhook_incoming_chat_started', array(
+            $this,'incommingChatStarted')
         );
     }
 
-    public static function chatSearchExecute($params)
+    /*
+     * erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.webhook_incoming_chat_started', array(
+            'webhook' => & $incomingWebhook,
+            'data' => & $payloadAll,
+            'chat' => & $chat
+        ));*/
+    public static function incommingChatStarted($params)
     {
-        $extTel = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
+        if ($params['webhook']->scope == 'telegram') {
 
-        if ($params['filter']['input_form']->{$extTel->settings['elastic_search']['search_attr']} == 1) {
-            $params['sparams']['body']['query']['bool']['must'][]['range']['tchat_raw_id']['gt'] = 0;
+            $telegramBot = null;
+
+            if (isset($_GET['telegram_bot_id'])) {
+                $telegramBot = erLhcoreClassModelTelegramBot::fetch((int)$_GET['telegram_bot_id']);
+            }
+
+            if (!is_object($telegramBot) && isset($params['chat']->chat_variables_array['iwh_field_2']) && $params['chat']->chat_variables_array['iwh_field_2'] != '') {
+                $telegramBot = erLhcoreClassModelTelegramBot::fetch($params['chat']->chat_variables_array['iwh_field_2']);
+            }
+
+            if (is_object($telegramBot)) {
+                $params['chat']->dep_id = $telegramBot->dep_id;
+                $params['chat']->updateThis(['update' => ['dep_id']]);
+
+                $chatId = null;
+                $messageData = [];
+                if (isset($params['data']['message']['chat']['id'])) {
+                    $chatId = $params['data']['message']['chat']['id'];
+                    $messageData = $params['data']['message']['from'];
+                } elseif (isset($params['data']['message']['chat']['id'])) {
+                    $chatId = $params['data']['callback_query']['message']['chat']['id'];
+                    $messageData = $params['data']['callback_query']['from'];
+                }
+
+                if (is_numeric($chatId)){
+                    $lead = \erLhcoreClassModelTelegramLead::findOne(array('filter' => array('tchat_id' => $chatId)));
+                    if (!($lead instanceof \erLhcoreClassModelTelegramLead)) {
+                        $lead = new \erLhcoreClassModelTelegramLead();
+                        $lead->language_code = isset($messageData['language_code']) ? $messageData['language_code'] : '';
+                        $lead->first_name = isset($messageData['first_name']) ? $messageData['first_name'] : '';
+                        $lead->last_name = isset($messageData['last_name']) ? $messageData['last_name'] : '';
+                        $lead->utime = time();
+                        $lead->ctime = time();
+                        $lead->tchat_id = $chatId;
+                        $lead->tbot_id = $telegramBot->id;
+                        $lead->dep_id = $telegramBot->dep_id;
+                        $lead->username = isset($messageData['username']) ? $messageData['username'] : '';
+                        $lead->saveThis();
+                    }
+                }
+            }
+        }
+    }
+
+    
+    /*
+     * erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.incoming_dynamic_array', array('incoming_chat' => $this, 'dynamic_array' => & $chat_dynamic_array));
+    */
+    public function incomingChatDynamicArray($params)
+    {
+        /*
+             {{args.chat.incoming_chat.incoming.attributes.bot_username}}
+             {{args.chat.incoming_chat.incoming_dynamic_array.bot_username}}
+             {{args.chat.incoming_chat.incoming.attributes.access_token}}
+             {{args.chat.incoming_chat.incoming_dynamic_array.access_token}}
+        */
+        if ($params['incoming_chat']->incoming->scope == 'telegram')
+        {
+            $telegramBot = null;
+
+            if (isset($_GET['telegram_bot_id'])) {
+                $telegramBot = erLhcoreClassModelTelegramBot::fetch((int)$_GET['telegram_bot_id']);
+            }
+
+            if (!is_object($telegramBot) && isset($params['incoming_chat']->chat->chat_variables_array['iwh_field_2']) && $params['incoming_chat']->chat->chat_variables_array['iwh_field_2'] != '') {
+                $telegramBot = erLhcoreClassModelTelegramBot::fetch($params['incoming_chat']->chat->chat_variables_array['iwh_field_2']);
+            }
+
+            if (is_object($telegramBot)) {
+                $params['dynamic_array']['access_token'] = $telegramBot->bot_api;
+                $params['dynamic_array']['bot_username'] = $telegramBot->bot_username;
+            }
+
+            if (!isset($params['dynamic_array']['access_token'])) {
+                $params['dynamic_array']['access_token'] = $params['incoming_chat']->incoming->attributes['access_token'];
+                $params['dynamic_array']['bot_username'] = $params['incoming_chat']->incoming->attributes['bot_username'];
+            }
         }
     }
 
     public function cannedMessageReplace($params)
     {
-        $chatVariables = $params['chat']->chat_variables_array;
-
-        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1) {
+        if (is_object($params['chat']->incoming_chat) && is_object($params['chat']->incoming_chat->incoming) && $params['chat']->incoming_chat->incoming->scope == 'telegram') {
             foreach ($params['items'] as & $item) {
 
                 if ($params['chat']->locale != '' && $item->languages != '') {
@@ -232,51 +254,6 @@ class erLhcoreClassExtensionLhctelegram
         $params['msg']->additional_data_array = $additionalArray;
     }
 
-    public function getPreviousChatsFilter($params)
-    {
-        $chatVariables = json_decode($params['chat']->chat_variables, true);
-
-        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1 && isset($chatVariables['tchat_raw_id']) && is_numeric($chatVariables['tchat_raw_id'])) {
-            $params['sparams']['body']['query']['bool']['must'] = array();
-            $params['sparams']['body']['query']['bool']['must'][]['term']['tchat_raw_id'] = (int)$chatVariables['tchat_raw_id'];
-            $params['sparams']['body']['query']['bool']['must'][]['range']['chat_id']['lt'] = $params['chat']->id;
-        }
-    }
-
-    // Get elastic structure
-    public function getElasticStructure($params)
-    {
-        $params['structure'][(isset($params['index_new']) ? $params['index_new'] : 'chat')]['types']['lh_chat']['tchat_raw_id'] = array('type' => 'long');
-        $params['structure'][(isset($params['index_new']) ? $params['index_new'] : 'chat')]['types']['lh_chat']['tbot_id'] = array('type' => 'long');
-    }
-
-
-    // Index chat
-    public function indexChat($params)
-    {
-        $chatVariables = json_decode($params['chat']->chat_variables, true);
-
-        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == 1 && isset($chatVariables['tchat_raw_id']) && isset($chatVariables['tchat_raw_id'])) {
-            $params['chat']->tchat_raw_id = $chatVariables['tchat_raw_id'];
-            $params['chat']->tbot_id = isset($chatVariables['tbot_id']) ? $chatVariables['tbot_id'] : 0;
-        }
-    }
-
-    public function getState($params)
-    {
-        if (isset($params['chat']->tchat_raw_id) && is_numeric($params['chat']->tchat_raw_id)) {
-            $params['state']['tchat_raw_id'] = $params['chat']->tchat_raw_id;
-        } else {
-            $params['state']['tchat_raw_id'] = 0;
-        }
-
-        if (isset($params['chat']->tbot_id) && is_numeric($params['chat']->tbot_id)) {
-            $params['state']['tbot_id'] = $params['chat']->tbot_id;
-        } else {
-            $params['state']['tbot_id'] = 0;
-        }
-    }
-
     /**
      * Checks automated hosting structure
      *
@@ -304,7 +281,7 @@ class erLhcoreClassExtensionLhctelegram
 
     public function messageAddedAdmin($params)
     {
-        if ($params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand') {
+        if (isset($params['lhc_caller']['class']) && $params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand') {
             return;
         }
 
@@ -319,6 +296,9 @@ class erLhcoreClassExtensionLhctelegram
     {
         $chat = $params['chat'];
         foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id' => $params['chat']->id, 'type' => 1]]) as $tchat) {
+            if ($tchat->bot->bot_client == 0) {
+                continue;
+            }
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
             $data = [
                 'chat_id' => $tchat->bot->group_chat_id,
@@ -345,15 +325,33 @@ class erLhcoreClassExtensionLhctelegram
                 }
                 Longman\TelegramBot\Request::sendMessage($data);
             }
+
         }
     }
 
     public function triggerClicked($params)
     {
+        if (is_object($params['chat']->incoming_chat) && $params['chat']->incoming_chat->incoming->scope == 'telegram') {
+            $telegramBot = erLhcoreClassModelTelegramBot::fetch((int)$_GET['telegram_bot_id']);
+            if (is_object($telegramBot)) {
+                $telegram = new \Longman\TelegramBot\Telegram($telegramBot->bot_api, $telegramBot->bot_username);
+                \Longman\TelegramBot\Request::send('editMessageReplyMarkup',[
+                    'chat_id' => $params['chat']->incoming_chat->chat_external_id,
+                    'message_id' => $params['msg']->meta_msg_array['iwh_msg_id'],
+                    'reply_markup' => null
+                ]);
+            }
+        }
+
         $chat = $params['chat'];
+
         foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id' => $params['chat']->id, 'type' => 1]]) as $tchat) {
 
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
+
+            if ($tchat->bot->bot_client == 0) {
+                continue;
+            }
 
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
@@ -501,192 +499,6 @@ class erLhcoreClassExtensionLhctelegram
         }
 
         return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'signature' => '');
-    }
-
-    /**
-     * Sends SMS to user
-     *
-     * */
-    public function sendMessageToTelegram($params)
-    {
-        $chatVariables = $params['chat']->chat_variables_array;
-
-        // It's SMS chat we need to send a message
-        if (isset($chatVariables['tchat']) && $chatVariables['tchat'] == true) {
-
-            try {
-
-                $response = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.send_msg_user', $params);
-
-                // Check is module disabled
-                if ($response !== false && $response['status'] === erLhcoreClassChatEventDispatcher::STOP_WORKFLOW) {
-                    throw new Exception(erTranslationClassLhTranslation::getInstance()->getTranslation('twilio/sms', 'Module is disabled for you!'));
-                }
-
-                if ($params['msg']->msg == '') {
-                    throw new Exception(erTranslationClassLhTranslation::getInstance()->getTranslation('twilio/sms', 'Please enter a message!'));
-                }
-
-                $tChat = erLhcoreClassModelTelegramChat::fetch($chatVariables['tchat_id']);
-
-                $telegram = new Longman\TelegramBot\Telegram($tChat->bot->bot_api, $tChat->bot->bot_username);
-
-                $images = $this->extractImages($params);
-
-                if (trim($params['msg']->msg) !== '') {
-
-                    $signatureText = '';
-
-                    // General module signal that it has send an sms
-                    $statusSignature = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.get_signature', array('user_id' => (isset($params['telegram_user_id']) ? $params['telegram_user_id'] : erLhcoreClassUser::instance()->getUserID()), 'bot_id' => $tChat->bot_id));
-
-                    if ($statusSignature !== false) {
-                        $signatureText = $statusSignature['signature'];
-                    }
-
-                    $params['msg']->msg = str_replace(array('[list]', '[/list]', '[*]', '[b]', '[/b]', '[i]', '[/i]', '[u]', '[/u]', '[s]', '[/s]', '[br]'), array('', '', '', '', '', '', '', '', '', '', '', "\n"), $params['msg']->msg);
-
-                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.make_plain_message', array('msg' => & $params['msg']->msg));
-
-                    $keyboardButtons = [];
-
-                    $metaMsg = $params['msg']->meta_msg_array;
-
-                    if (isset($metaMsg['content']['quick_replies']) && !empty($metaMsg['content']['quick_replies'])) {
-                        foreach ($metaMsg['content']['quick_replies'] as $quickReplyButton) {
-                            if ($quickReplyButton['type'] == 'trigger' || $quickReplyButton['type'] == 'button') {
-                                $keyboardButtons[] = [
-                                    'text' => $quickReplyButton['content']['name'],
-                                    'callback_data' => ($quickReplyButton['type'] == 'button' ? 'bpayload__||' : 'trigger__||') . $quickReplyButton['content']['payload'] . '__' . md5($quickReplyButton['content']['name']) . '__' . $params['msg']->id
-                                ];
-                            } elseif ($quickReplyButton['type'] == 'url') {
-                                $keyboardButtons[] = [
-                                    'text' => $quickReplyButton['content']['name'],
-                                    'url' => $quickReplyButton['content']['payload']
-                                ];
-                            }
-                        }
-                    }
-
-                    $data = [
-                        'chat_id' => $tChat->tchat_id,
-                        'text' => trim($params['msg']->msg) . $signatureText
-                    ];
-
-                    if (!empty($keyboardButtons)) {
-                        $max_per_row  = 2; // or however many you want!
-                        $per_row      = sqrt(count($keyboardButtons));
-                        $rows         = array_chunk($keyboardButtons, $per_row === floor($per_row) ? $per_row : $max_per_row);
-                        $keyboard = new Longman\TelegramBot\Entities\InlineKeyboard(...$rows);
-                        $keyboard->setResizeKeyboard(true);
-                        $data['reply_markup'] = $keyboard;
-                    }
-
-                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
-
-                    if ($sendData->isOk()) {
-                        $metaMsg['iwh_msg_id'] = $sendData->getResult()->getMessageId();
-
-                        $params['msg']->meta_msg_array = $metaMsg;
-                        $params['msg']->meta_msg = json_encode($metaMsg);
-                        $params['msg']->del_st = erLhcoreClassModelmsg::STATUS_READ;
-
-                        if ($params['msg']->id > 0) {
-                            $params['msg']->updateThis(['update' => ['meta_msg', 'del_st']]);
-                        }
-                    }
-                }
-
-                foreach ($images['images'] as $image) {
-                    $data = [
-                        'chat_id' => $tChat->tchat_id,
-                        'photo' => $image,
-                    ];
-
-                    Longman\TelegramBot\Request::sendPhoto($data);
-                }
-
-                foreach ($images['files'] as $doc) {
-                    $data = [
-                        'chat_id' => $tChat->tchat_id,
-                        'document' => $doc,
-                    ];
-
-                    Longman\TelegramBot\Request::sendDocument($data);
-                }
-
-                if (!isset($params['ignore_callback'])) {
-                    // General module signal that it has send an sms
-                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('telegram.msg_send_to_user', array('chat' => & $params['chat']));
-
-                    // If operator has closed a chat we need force back office sync
-                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
-                        'chat' => & $params['chat']
-                    ));
-                }
-
-            } catch (Exception $e) {
-
-                $msg = new erLhcoreClassModelmsg();
-                $msg->msg = $e->getMessage();
-                $msg->chat_id = $params['chat']->id;
-                $msg->user_id = -1;
-                $msg->time = time();
-                erLhcoreClassChat::getSession()->save($msg);
-
-                // Update chat attributes
-                $db = ezcDbInstance::get();
-                $db->beginTransaction();
-
-                $stmt = $db->prepare('UPDATE lh_chat SET last_user_msg_time = :last_user_msg_time, last_msg_id = :last_msg_id WHERE id = :id');
-                $stmt->bindValue(':id', $params['chat']->id, PDO::PARAM_INT);
-                $stmt->bindValue(':last_user_msg_time', $msg->time, PDO::PARAM_STR);
-                $stmt->bindValue(':last_msg_id', $msg->id, PDO::PARAM_STR);
-                $stmt->execute();
-
-                $db->commit();
-
-                if ($this->settings['debug'] == true) {
-                    erLhcoreClassLog::write(print_r($e, true));
-                }
-            }
-        }
-        //$this->messageAdded($params);
-    }
-
-    private function extractImages(&$params)
-    {
-        $matches = array();
-
-        preg_match_all('/\[file="?(.*?)"?\]/is', $params['msg']->msg, $matches);
-
-        $files = array();
-
-        if (isset($matches[1])) {
-            foreach ($matches[1] as $matchItem) {
-                list($fileID, $hash) = explode('_', $matchItem);
-                try {
-                    $file = erLhcoreClassModelChatFile::fetch($fileID);
-                    $files[] = $file;
-                } catch (Exception $e) {
-
-                }
-            }
-        }
-
-        $params['msg']->msg = preg_replace('#\[file="?(.*?)"?\]#is', '', $params['msg']->msg);
-
-        $images = array('images' => array(), 'files' => array());
-
-        foreach ($files as $file) {
-            if (in_array($file->type, array('image/png', 'image/jpeg', 'image/gif'))) {
-                $images['images'][] = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$file->security_hash}/";
-            } else {
-                $images['files'][] = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$file->security_hash}/" . $file->upload_name;
-            }
-        }
-
-        return $images;
     }
 
     public function __get($var)

@@ -1,0 +1,10 @@
+{
+  "event": "chat.workflow.canned_message_before_save",
+  "bot_id": 134,
+  "trigger_id": 1387,
+  "trigger_id_alt": 0,
+  "bot_id_alt": 0,
+  "disabled": 0,
+  "type": 0,
+  "configuration": "[{\"_id\":\"wmR0a5cSSq\",\"type\":\"3\",\"logic\":\"and\",\"attr\":\"{args.chat.incoming_chat.incoming.scope}\",\"condition\":\"eq\",\"value\":\"telegram\"},{\"_id\":\"2yw41CoIM2\",\"type\":\"3\",\"logic\":\"and\",\"attr\":\"{args.chat.last_message.meta_msg_array.content.whisper}\",\"condition\":\"neq\",\"value\":\"1\"},{\"_id\":\"upxotszFTO\",\"type\":\"3\",\"logic\":\"and\",\"attr\":\"{args.chat.last_message.user_id}\",\"condition\":\"neq\",\"value\":\"-1\"}]"
+}

@@ -15,7 +15,13 @@
     <tr>
         <td><?php echo $item->id?></td>
         <td><?php echo $item->bot_username?></td>
-        <td><?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?> <a title="<?php echo $item->callback_url?>" href="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>" class="btn btn-xs btn-info">Set webhook</a></td>
+        <td>
+            <?php if ($item->callback_url !== null) : ?>
+                <?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?> <a title="<?php echo $item->callback_url?>" href="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>" class="btn btn-xs btn-info">Set webhook</a>
+            <?php else : ?>
+                <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Please finish');?> <a href="<?php echo erLhcoreClassDesign::baseurl('telegram/options')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','configuration');?></a>
+            <?php endif; ?>
+        </td>
         <td nowrap>
           <div class="btn-group" role="group" aria-label="..." style="width:60px;">
             <a class="btn btn-secondary btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('telegram/edit')?>/<?php echo $item->id?>" ><i class="material-icons mr-0">&#xE254;</i></a>
