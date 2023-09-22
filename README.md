@@ -6,6 +6,12 @@ This extension allow have support for telegram bot support directly in Live Help
 
 Min 4.27v Live Helper Chat version.
 
+## Upgrading
+
+1. Run `php cron.php -s site_admin -e lhctelegram -c cron/update_structure`
+2. Navigation to telegram options and active configuration
+
+
 ## Install instructions
 
 1. Clone github repository
