@@ -11,6 +11,11 @@ Min 4.27v Live Helper Chat version.
 1. Run `php cron.php -s site_admin -e lhctelegram -c cron/update_structure`
 2. Navigation to telegram options and active configuration
 
+## Tips
+
+1. By default we use HTML markdown. Means there is limitation what you can send.
+2. For debug purposes find `TelegramIntegration` bot and uncheck `Skip` option.
+3. If you do not want any HTML or Markdown support. Just edit `Rest API` call and remove `"parse_mode":"HTML",` and change `{{msg_html_nobr}}` to `{{msg_url}}`
 
 ## Install instructions
 
