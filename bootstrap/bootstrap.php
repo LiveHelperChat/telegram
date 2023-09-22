@@ -49,7 +49,7 @@ class erLhcoreClassExtensionLhctelegram
 
         $dispatcher->listen('chat.before_auto_responder_msg_saved', array(
             $this,
-            'messageAdded'
+            'messageAddedResponder'
         ));
 
         $dispatcher->listen('chat.addmsguser', array(
@@ -292,6 +292,17 @@ class erLhcoreClassExtensionLhctelegram
         $this->messageAdded($params);
     }
 
+    public function messageAddedResponder($params)
+    {
+        if (isset($params['source']) && $params['source'] == 'webhook') {
+            return;
+        }
+
+        $params['no_afterwards_messages'] = true;
+
+        $this->messageAdded($params);
+    }
+
     public function messageAdded($params)
     {
         $chat = $params['chat'];
@@ -312,6 +323,10 @@ class erLhcoreClassExtensionLhctelegram
 
             Longman\TelegramBot\Request::sendMessage($data);
 
+            if (isset($params['no_afterwards_messages']) && $params['no_afterwards_messages'] == true) {
+                continue;
+            }
+
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
             foreach ($botMessages as $botMessage) {
@@ -325,6 +340,8 @@ class erLhcoreClassExtensionLhctelegram
                 }
                 Longman\TelegramBot\Request::sendMessage($data);
             }
+
+
 
         }
     }
