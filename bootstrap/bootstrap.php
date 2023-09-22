@@ -340,9 +340,6 @@ class erLhcoreClassExtensionLhctelegram
                 }
                 Longman\TelegramBot\Request::sendMessage($data);
             }
-
-
-
         }
     }
 

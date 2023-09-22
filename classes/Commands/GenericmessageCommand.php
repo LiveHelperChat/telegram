@@ -307,7 +307,7 @@ class GenericmessageCommand extends SystemCommand
 
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
 
-                                    $chat->pnd_time = time();
+                                    $chat->pnd_time = time() - 2;
                                     $chat->wait_time = 1;
 
                                     $chat->user_id = $operator->user_id;
