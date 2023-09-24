@@ -314,7 +314,7 @@ class erLhcoreClassExtensionLhctelegram
             $data = [
                 'chat_id' => $tchat->bot->group_chat_id,
                 'message_thread_id' => $tchat->tchat_id,
-                'text' => trim(($params['msg']->name_support != '' ? '[' . $params['msg']->name_support . '] ' : '') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0)))
+                'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: ' : '') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0)))
             ];
 
             if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
@@ -333,7 +333,7 @@ class erLhcoreClassExtensionLhctelegram
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
-                    'text' => trim(($botMessage->name_support != '' ? '[' . $botMessage->name_support . '] ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)))
+                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)))
                 ];
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                     $data['disable_notification'] = true;
@@ -374,7 +374,7 @@ class erLhcoreClassExtensionLhctelegram
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
                     'disable_notification' => true,
-                    'text' => trim(($botMessage->name_support != '' ? '[' . $botMessage->name_support . '] ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)))
+                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)))
                 ];
 
                 Longman\TelegramBot\Request::sendMessage($data);
@@ -411,7 +411,7 @@ class erLhcoreClassExtensionLhctelegram
                 if ($tChat->tchat_id == null) {
                     $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                         'chat_id' => $bot->bot->group_chat_id,
-                        'name' => $params['chat']->nick . ' #' . $params['chat']->id
+                        'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
                     ]);
 
                     if ($sendData->isOk()) {
@@ -420,12 +420,12 @@ class erLhcoreClassExtensionLhctelegram
                 }
 
                 $visitor = array();
-                $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) . ',  ID: ' . $params['chat']->id . ', Nick: ' . $params['chat']->nick . ", Messages:\n";
+                $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . "\n├──Nick: " . $params['chat']->nick . "\n└──Messages:\n";
 
                 // Collect all chat messages including bot
                 $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
                 foreach ($botMessages as $botMessage) {
-                    $visitor[] = trim(($botMessage->name_support != '' ? '[' . $botMessage->name_support . '] ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)));
+                    $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: ' : '') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)));
                 }
 
                 $data = [
