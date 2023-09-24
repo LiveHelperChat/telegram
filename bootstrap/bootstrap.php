@@ -411,7 +411,7 @@ class erLhcoreClassExtensionLhctelegram
                 if ($tChat->tchat_id == null) {
                     $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                         'chat_id' => $bot->bot->group_chat_id,
-                        'name' => $params['chat']->nick . ' #' . $params['chat']->id
+                        'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
                     ]);
 
                     if ($sendData->isOk()) {
