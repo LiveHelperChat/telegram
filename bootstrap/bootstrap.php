@@ -420,7 +420,8 @@ class erLhcoreClassExtensionLhctelegram
                 }
 
                 $visitor = array();
-                $visitor[] = 'New chat, Department: ' . ((string)$params['chat']->department) . ',  ID: ' . $params['chat']->id . ', Nick: ' . $params['chat']->nick . ", Messages:\n";
+                $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . "\n├──Nick: " . $params['chat']->nick . "\n└──Messages:\n";
+
 
                 // Collect all chat messages including bot
                 $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
