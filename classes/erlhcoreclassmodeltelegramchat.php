@@ -21,7 +21,8 @@ class erLhcoreClassModelTelegramChat
             'chat_id' => $this->chat_id,
             'ctime' => $this->ctime,
             'utime' => $this->utime,
-            'type' => $this->type
+            'type' => $this->type,
+            'chat_id_internal' => $this->chat_id_internal
         );
     }
 
@@ -57,7 +58,8 @@ class erLhcoreClassModelTelegramChat
     public $tchat_id = null;
     
     public $chat_id = null;
-    
+    public $chat_id_internal = null;
+
     public $ctime = null;
     
     public $utime = null;

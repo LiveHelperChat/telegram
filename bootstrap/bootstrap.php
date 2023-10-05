@@ -306,7 +306,7 @@ class erLhcoreClassExtensionLhctelegram
     public function messageAdded($params)
     {
         $chat = $params['chat'];
-        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id' => $params['chat']->id, 'type' => 1]]) as $tchat) {
+        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
             if ($tchat->bot->bot_client == 0) {
                 continue;
             }
@@ -359,7 +359,7 @@ class erLhcoreClassExtensionLhctelegram
 
         $chat = $params['chat'];
 
-        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id' => $params['chat']->id, 'type' => 1]]) as $tchat) {
+        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
 
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
 
@@ -389,9 +389,11 @@ class erLhcoreClassExtensionLhctelegram
         foreach ($bots as $bot) {
             if ($bot->bot instanceof erLhcoreClassModelTelegramBot && $bot->bot->bot_client == 1) {
 
+                $chatId = $params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id;
+
                 $tChat = \erLhcoreClassModelTelegramChat::findOne(array(
                     'filter' => array(
-                        'chat_id' => $params['chat']->id,
+                        'chat_id_internal' => $chatId,
                         'bot_id' => $bot->bot->id,
                         'type' => 1
                     )
@@ -401,9 +403,14 @@ class erLhcoreClassExtensionLhctelegram
                     $tChat = new \erLhcoreClassModelTelegramChat();
                     $tChat->type = 1;
                     $tChat->bot_id = $bot->bot->id;
+                    $tChat->chat_id_internal = $chatId;
                     $tChat->chat_id = $params['chat']->id;
                     $tChat->utime = time();
                     $tChat->ctime = time();
+                } else {
+                    // Update to a new chat
+                    $tChat->chat_id = $params['chat']->id;
+                    $tChat->updateThis(['update' => ['chat_id']]);
                 }
 
                 $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
@@ -487,7 +494,7 @@ class erLhcoreClassExtensionLhctelegram
     {
         $db = ezcDbInstance::get();
         $stmt = $db->prepare('DELETE FROM lhc_telegram_chat WHERE chat_id = :chat_id');
-        $stmt->bindValue(':chat_id', $params['chat']->id, PDO::PARAM_INT);
+        $stmt->bindValue(':chat_id', ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), PDO::PARAM_INT);
         $stmt->execute();
     }
 
