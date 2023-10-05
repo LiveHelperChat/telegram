@@ -493,8 +493,8 @@ class erLhcoreClassExtensionLhctelegram
     public function deleteChat($params)
     {
         $db = ezcDbInstance::get();
-        $stmt = $db->prepare('DELETE FROM lhc_telegram_chat WHERE chat_id = :chat_id');
-        $stmt->bindValue(':chat_id', ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), PDO::PARAM_INT);
+        $stmt = $db->prepare('DELETE FROM lhc_telegram_chat WHERE chat_id_internal = :chat_id_internal');
+        $stmt->bindValue(':chat_id_internal', ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), PDO::PARAM_INT);
         $stmt->execute();
     }
 
