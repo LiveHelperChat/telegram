@@ -1,10 +1,10 @@
 # Telegram bot integration
 
-This extension allow have support for telegram bot support directly in Live Helper Chat. It support sound messages, images, files.
+This extension allows for direct support of Telegram bots in Live Helper Chat. It supports sound messages, images, and files.
 
 ## Requirements
 
-Min 4.27v Live Helper Chat version.
+Minimum version required: Live Helper Chat 4.27v.
 
 ## Upgrading
 
@@ -50,26 +50,26 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 
 ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/topic-chats.png)
 
-1. After you have completed the above steps, you have to do the following changes: In LHC back office, go back to the bot editing page and choose the departments tab. Check the departments you want to receive new chats notifications for. Don't save yet.
+1. After you have completed the above steps, you have to do the following changes: In LHC back office, go back to the bot editing page and choose the departments tab. Check the departments you want to receive new chats notifications for but don't save yet.
 2. Create a group chat in telegram and add your bot as an admin in the group chat.
 3. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/bot-as-admin.png) 
-4. Modify group chat settings and enable topics. Each customer will get it's own topic.
+4. Modify group chat settings and enable topics. Each customer will get their own topic.
    1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/manage-group.png)
    2. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/enable-topics.png)
-5. Create a dummy topic and send a dummy message and copy url.
+5. Create a dummy topic, send a dummy message, and copy the URL.
    1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/copylink.png)
-6. Your link will look like `https://t.me/c/1634340846/3/4` and your group id will be middle number `1634340846` with appended `-100` so it will be like `-1001634340846` as concat string `-100` + `1634340846`
-7. LHC back office main `telegram page > Telegram bots > Edit bot departments` : Copy-paste the telegram group id to the field `Group Chat ID`. In same tab, check the `This bot acts as a client` box. Now save.
-8. Go to LHC back office main telegram page and choose `Telegram operators`. Choose Operator and Bot, or create one.
-9. Now start a conversation in Telegram and register yourself within bot by typing `/register <id>`. The `<id>` should be registered operator id from the very first column in the operators list in LHC Modules => Telegram Settings => Telegram operators.
+6. Your link will look like `https://t.me/c/1634340846/3/4`, and your group ID will be the middle number `1634340846` with the appended `-100`, so it will be like `-1001634340846` as a concatenated string of `-100` + `1634340846`.
+7. In the LHC back office, go to the main `Telegram page`, then to `Telegram bots > Edit bot departments`. Copy-paste the Telegram group ID into the `Group Chat ID` field. In the same tab, check the `This bot acts as a client` box. Now save.
+8. Go to the LHC back office main Telegram page and choose `Telegram operators`. Choose Operator and Bot, or create one.
+9. Start a conversation in Telegram and register yourself within the bot by typing `/register <id>`. The `<id>` should be the registered operator id from the very first column in the operators list in LHC Modules => Telegram Settings => Telegram operators.
 10. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache (https://onlinehelpguide.com/delete-telegram-cache-files/) and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 11. That's all. Just type /help to see what available commands are supported.
 
 ## Tip
 
-* If you are planning only using telegram to support your site visitors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
-* For chat being accepted by first message from telegram. You have to be in `Visible` status
+* If you are planning only to use Telegram to support your site visitors, it makes sense to set up department online hours so the widget will remain always online even if you are not using the default web back office.
+* For a chat to be accepted by the first message from Telegram, you have to be in `Visible` status.
 
-Since 3.36v you can just set your online condition to `Always online` and you won't have to do anything else.
+Since version 3.36v, you can set your online condition to `Always online`, and you won't have to do anything else.
 
 https://livehelperchat.com/how-to-use-telegram-if-you-are-automated-hosting-client-489a.html
