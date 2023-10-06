@@ -59,15 +59,17 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 5. Create a dummy topic and send a dummy message and copy url.
    1. ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/copylink.png)
 6. Your link will look like `https://t.me/c/1634340846/3/4` and your group id will be middle number `1634340846` with appended `-100` so it will be like `-1001634340846` as concat string `-100` + `1634340846`
-7. LHC back office main telegram page > Telegram bots > Edit bot departments : Copy-paste the telegram group id to the field 'Group Chat ID'. In same tab, check the "This bot acts as a client" box. Now save.
-8. Go to LHC back office main telegram page and choose "Telegram operators". Choose Operator and Bot, or create one.
+7. LHC back office main `telegram page > Telegram bots > Edit bot departments` : Copy-paste the telegram group id to the field `Group Chat ID`. In same tab, check the `This bot acts as a client` box. Now save.
+8. Go to LHC back office main telegram page and choose `Telegram operators`. Choose Operator and Bot, or create one.
 9. Now start a conversation in Telegram and register yourself within bot by typing `/register <id>`. The `<id>` should be registered operator id from the very first column in the operators list in LHC Modules => Telegram Settings => Telegram operators.
 10. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache (https://onlinehelpguide.com/delete-telegram-cache-files/) and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 11. That's all. Just type /help to see what available commands are supported.
 
 ## Tip
-If you are planning only using telegram to support your site visitors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
 
-Since 3.36v you can just set your online condition to "Always online" and you won't have to do anything else.
+* If you are planning only using telegram to support your site visitors. It makes sense to setup department online hours, so widget will remain always online even if you are not using default web back office.
+* For chat being accepted by first message from telegram. You have to be in `Visible` status
+
+Since 3.36v you can just set your online condition to `Always online` and you won't have to do anything else.
 
 https://livehelperchat.com/how-to-use-telegram-if-you-are-automated-hosting-client-489a.html
