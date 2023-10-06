@@ -381,7 +381,7 @@ class GenericmessageCommand extends SystemCommand
                 $data = [
                     'chat_id' => $chat_id,
                     'message_thread_id' => $message->getMessageThreadId(),
-                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat NEW" . $type,
+                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat",
                 ];
                 return Request::sendMessage($data);
             }
