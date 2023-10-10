@@ -48,6 +48,8 @@ This feature allows you to use the Telegram bot as a gateway between chats on yo
 
 Example of final setup. Each customer get's it's own topic. and you can use telegram to chat with your customers directly. Files are also supported!
 
+[![Watch the video](https://img.youtube.com/vi/wObbEaeopRU/default.jpg)](https://youtu.be/wObbEaeopRU)
+
 ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/topic-chats.png)
 
 1. After you have completed the above steps, you have to do the following changes: In LHC back office, go back to the bot editing page and choose the departments tab. Check the departments you want to receive new chats notifications for but don't save yet.
