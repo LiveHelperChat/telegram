@@ -390,8 +390,6 @@ class erLhcoreClassExtensionLhctelegram
 
     public function chatStarted($params)
     {
-        erLhcoreClassLog::write(print_r('CHAT_STARTED',true));
-
         $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
 
         foreach ($bots as $bot) {
