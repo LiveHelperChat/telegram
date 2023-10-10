@@ -48,7 +48,11 @@ This feature allows you to use the Telegram bot as a gateway between chats on yo
 
 Example of final setup. Each customer get's it's own topic. and you can use telegram to chat with your customers directly. Files are also supported!
 
+### Watch Youtube video
+
 [![Watch the video](https://img.youtube.com/vi/wObbEaeopRU/default.jpg)](https://youtu.be/wObbEaeopRU)
+
+### Instructions
 
 ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/topic-chats.png)
 
