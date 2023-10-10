@@ -438,7 +438,7 @@ class erLhcoreClassExtensionLhctelegram
                 $data = [
                     'chat_id' => $bot->bot->group_chat_id,
                     'message_thread_id' => $tChat->tchat_id,
-                    'text' => implode("\n", $visitor)
+                    'text' => implode("\n\n", $visitor)
                 ];
 
                 if ($params['chat']->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
