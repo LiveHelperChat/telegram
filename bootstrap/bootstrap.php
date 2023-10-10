@@ -345,6 +345,12 @@ class erLhcoreClassExtensionLhctelegram
 
     public function triggerClicked($params)
     {
+
+        // Everything will be processed on main start chat trigger
+        if (erLhcoreClassGenericBotWorkflow::$startChat == true) {
+            return;
+        }
+
         if (is_object($params['chat']->incoming_chat) && $params['chat']->incoming_chat->incoming->scope == 'telegram') {
             $telegramBot = erLhcoreClassModelTelegramBot::fetch((int)$_GET['telegram_bot_id']);
             if (is_object($telegramBot)) {
@@ -384,6 +390,8 @@ class erLhcoreClassExtensionLhctelegram
 
     public function chatStarted($params)
     {
+        erLhcoreClassLog::write(print_r('CHAT_STARTED',true));
+
         $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
 
         foreach ($bots as $bot) {
