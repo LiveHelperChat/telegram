@@ -381,11 +381,12 @@ class erLhcoreClassExtensionLhctelegram
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
-                    'disable_notification' => true,
                     'parse_mode' => 'HTML',
                     'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                 ];
-
+                if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                    $data['disable_notification'] = true;
+                }
                 Longman\TelegramBot\Request::sendMessage($data);
             }
         }
