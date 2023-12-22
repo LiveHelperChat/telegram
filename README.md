@@ -16,6 +16,7 @@ Minimum version required: Live Helper Chat 4.27v.
 1. By default, HTML markdown is used for messages.
 2. You can enable debug mode by unchecking the `Skip` option for the `TelegramIntegration` bot.
 3. If you don't want HTML or Markdown support, you can edit the Rest API call by removing `"parse_mode":"HTML",` and change `{{msg_html_nobr}}` to `{{msg_url}}`.
+4. In parse mode `"HTML"` not all tags are supported so don't use bbcode which translates to HTML which is not supported by telegram. You can always debug in Rest API enabling debug trigger. So you should have different bot or messages depending whom you are sending message. Telegram client or web widget.
 
 ## Installation instructions
 
