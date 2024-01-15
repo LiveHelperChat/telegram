@@ -11,7 +11,7 @@ Minimum version required: Live Helper Chat 4.27v.
 1. Run the command `php cron.php -s site_admin -e lhctelegram -c cron/update_structure`
 2. Navigate to the Telegram options and activate the configuration.
 
-## Tips
+## Integration tips
 
 1. By default, HTML markdown is used for messages.
 2. You can enable debug mode by unchecking the `Skip` option for the `TelegramIntegration` bot.
@@ -72,10 +72,15 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 10. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache (https://onlinehelpguide.com/delete-telegram-cache-files/) and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 11. That's all. Just type /help to see what available commands are supported.
 
-## Tip
+## General tips
 
 * If you are planning only to use Telegram to support your site visitors, it makes sense to set up department online hours so the widget will remain always online even if you are not using the default web back office.
 * For a chat to be accepted by the first message from Telegram, you have to be in `Visible` status.
+* You can listen for a `/start` command by defining event listener with keyword `/start`. The Same way you can listen to any other command.
+  * ![](https://raw.githubusercontent.com/LiveHelperChat/telegram/master/doc/img/start-command.png)
+* Same visitor chats are written to the same topic as long Online Visitor record exists. You can extend it to be valid for one year in `Settings -> Chat configuration -> Online tracking -> How many days keep records of online users.`
+* Integration supports quick reply buttons. Using these, you can make a quick navigation.
+* Telegram API has limit of 20MB per file size limit. Please make sure you set the appropriate limit in lhc files sections.
 
 Since version 3.36v, you can set your online condition to `Always online`, and you won't have to do anything else.
 
