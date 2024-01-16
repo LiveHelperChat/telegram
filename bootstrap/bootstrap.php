@@ -335,7 +335,7 @@ class erLhcoreClassExtensionLhctelegram
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
                     'parse_mode' => 'HTML',
-                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ')) . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                 ];
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                     $data['disable_notification'] = true;
@@ -442,7 +442,7 @@ class erLhcoreClassExtensionLhctelegram
                 // Collect all chat messages including bot
                 $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
                 foreach ($botMessages as $botMessage) {
-                    $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                    $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                 }
 
                 $data = [
