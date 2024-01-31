@@ -92,7 +92,7 @@ class CallbackqueryCommand extends SystemCommand
             } else {
                 $data = [
                     'chat_id' => $callback_query->getFrom()->getId(),
-                    'text'    => 'Operator could not be found!',
+                    'text'    => \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Operator could not be found!'),
                 ];
 
                 return Request::sendMessage($data);
@@ -126,7 +126,7 @@ class CallbackqueryCommand extends SystemCommand
                 $chat->status_sub = \erLhcoreClassModelChat::STATUS_SUB_OWNER_CHANGED;
 
                 $msg = new \erLhcoreClassModelmsg();
-                $msg->msg = (string)$operator->user->name_support.' '.\erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','took over the chat!');
+                $msg->msg = (string)$operator->user->name_support.' '.\erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','took over the chat!');
                 $msg->chat_id = $chat->id;
                 $msg->user_id = -1;
                 $msg->time = time();
@@ -161,7 +161,7 @@ class CallbackqueryCommand extends SystemCommand
 
                 $data = [
                     'callback_query_id' => $callback_query_id,
-                    'text'              => 'Chat was taken over!',
+                    'text'              => \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Chat was taken over!'),
                     'show_alert'        => false,
                     'cache_time'        => 5,
                 ];
@@ -171,7 +171,7 @@ class CallbackqueryCommand extends SystemCommand
                 $data = [
                     'chat_id' => $tBot->group_chat_id,
                     'message_thread_id' => $message->getMessageThreadId(),
-                    'text'    => 'Chat was taken over accepted!',
+                    'text'    => \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Chat was taken over accepted!'),
                 ];
 
                 Request::sendMessage($data);

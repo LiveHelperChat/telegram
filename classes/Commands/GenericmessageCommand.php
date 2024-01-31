@@ -342,7 +342,7 @@ class GenericmessageCommand extends SystemCommand
                                         'chat_id' => $chat_id,
                                         'message_thread_id' => $message->getMessageThreadId(),
                                         'parse_mode' => 'HTML',
-                                        'text'    => "<b>[System assistant]</b> <i>" . htmlspecialchars($userData->name_official) ."</i> was assigned as a chat operator! Type /chat for more information.",
+                                        'text'    => "<b>[System assistant]</b> <i>" . htmlspecialchars($userData->name_official) . "</i> " . \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','was assigned as a chat operator! Type /chat for more information.'),
                                     ];
                                     Request::sendMessage($data);
                                 }
@@ -370,7 +370,7 @@ class GenericmessageCommand extends SystemCommand
                         $data = [
                             'chat_id' => $chat_id,
                             'message_thread_id' => $message->getMessageThreadId(),
-                            'text'    => "Chat could not be found!",
+                            'text'    => \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Chat could not be found!'),
                         ];
 
                         return Request::sendMessage($data);
