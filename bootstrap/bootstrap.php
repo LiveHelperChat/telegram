@@ -322,7 +322,20 @@ class erLhcoreClassExtensionLhctelegram
                 $data['disable_notification'] = true;
             }
 
-            Longman\TelegramBot\Request::sendMessage($data);
+            $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+            if (!$sendData->isOk()) {
+                erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'telegram_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => $chat->id
+                    )
+                );
+            }
 
             if (isset($params['no_afterwards_messages']) && $params['no_afterwards_messages'] == true) {
                 continue;
@@ -340,7 +353,20 @@ class erLhcoreClassExtensionLhctelegram
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                     $data['disable_notification'] = true;
                 }
-                Longman\TelegramBot\Request::sendMessage($data);
+                $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                if (!$sendData->isOk()) {
+                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'telegram_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $chat->id
+                        )
+                    );
+                }
             }
         }
     }
@@ -387,7 +413,20 @@ class erLhcoreClassExtensionLhctelegram
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                     $data['disable_notification'] = true;
                 }
-                Longman\TelegramBot\Request::sendMessage($data);
+                $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                if (!$sendData->isOk()) {
+                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'telegram_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $chat->id
+                        )
+                    );
+                }
             }
         }
     }
@@ -395,70 +434,95 @@ class erLhcoreClassExtensionLhctelegram
     public function chatStarted($params)
     {
         $bots = erLhcoreClassModelTelegramBotDep::getList(array('filter' => array('dep_id' => $params['chat']->dep_id)));
+        $db = ezcDbInstance::get();
 
         foreach ($bots as $bot) {
             if ($bot->bot instanceof erLhcoreClassModelTelegramBot && $bot->bot->bot_client == 1) {
 
-                $chatId = $params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id;
+                try {
+                    $db->beginTransaction();
 
-                $tChat = \erLhcoreClassModelTelegramChat::findOne(array(
-                    'filter' => array(
-                        'chat_id_internal' => $chatId,
-                        'bot_id' => $bot->bot->id,
-                        'type' => 1
-                    )
-                ));
+                    $chatId = $params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id;
 
-                if (!($tChat instanceof \erLhcoreClassModelTelegramChat)) {
-                    $tChat = new \erLhcoreClassModelTelegramChat();
-                    $tChat->type = 1;
-                    $tChat->bot_id = $bot->bot->id;
-                    $tChat->chat_id_internal = $chatId;
-                    $tChat->chat_id = $params['chat']->id;
-                    $tChat->utime = time();
-                    $tChat->ctime = time();
-                } else {
-                    // Update to a new chat
-                    $tChat->chat_id = $params['chat']->id;
-                    $tChat->updateThis(['update' => ['chat_id']]);
-                }
+                    $tChat = \erLhcoreClassModelTelegramChat::findOne(array(
+                        'filter' => array(
+                            'chat_id_internal' => $chatId,
+                            'bot_id' => $bot->bot->id,
+                            'type' => 1
+                        )
+                    ));
 
-                $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
-
-                if ($tChat->tchat_id == null) {
-                    $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
-                        'chat_id' => $bot->bot->group_chat_id,
-                        'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
-                    ]);
-
-                    if ($sendData->isOk()) {
-                        $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();
+                    if (!($tChat instanceof \erLhcoreClassModelTelegramChat)) {
+                        $tChat = new \erLhcoreClassModelTelegramChat();
+                        $tChat->type = 1;
+                        $tChat->bot_id = $bot->bot->id;
+                        $tChat->chat_id_internal = $chatId;
+                        $tChat->chat_id = $params['chat']->id;
+                        $tChat->utime = time();
+                        $tChat->ctime = time();
+                    } else {
+                        // Update to a new chat
+                        $tChat->chat_id = $params['chat']->id;
+                        $tChat->updateThis(['update' => ['chat_id']]);
                     }
+
+                    $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
+
+                    if ($tChat->tchat_id == null) {
+                        $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
+                            'chat_id' => $bot->bot->group_chat_id,
+                            'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
+                        ]);
+
+                        if ($sendData->isOk()) {
+                            $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();
+                        } else {
+                            throw new Exception('['.$sendData->getErrorCode().']'. $sendData->getDescription());
+                        }
+                    }
+
+                    $visitor = array();
+                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') . "\n├──Nick: " . $params['chat']->nick . "\n└──Messages:";
+
+                    // Collect all chat messages including bot
+                    $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
+                    foreach ($botMessages as $botMessage) {
+                        $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                    }
+
+                    $data = [
+                        'chat_id' => $bot->bot->group_chat_id,
+                        'message_thread_id' => $tChat->tchat_id,
+                        'text' => implode("\n\n", $visitor),
+                        'parse_mode' => 'HTML'
+                    ];
+
+                    if ($params['chat']->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                        $data['disable_notification'] = true;
+                    }
+
+                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                    if (!$sendData->isOk()){
+                        throw new Exception('['.$sendData->getErrorCode().']'. $sendData->getDescription());
+                    }
+
+                    $tChat->saveThis();
+
+                    $db->commit();
+                } catch (Exception $e) {
+                    $db->rollback();
+                    erLhcoreClassLog::write($e->getMessage() . '-' . $e->getTraceAsString(),
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'telegram_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $params['chat']->id
+                        )
+                    );
                 }
-
-                $visitor = array();
-                $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') . "\n├──Nick: " . $params['chat']->nick . "\n└──Messages:";
-
-                // Collect all chat messages including bot
-                $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
-                foreach ($botMessages as $botMessage) {
-                    $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
-                }
-
-                $data = [
-                    'chat_id' => $bot->bot->group_chat_id,
-                    'message_thread_id' => $tChat->tchat_id,
-                    'text' => implode("\n\n", $visitor),
-                    'parse_mode' => 'HTML'
-                ];
-
-                if ($params['chat']->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
-                    $data['disable_notification'] = true;
-                }
-
-                Longman\TelegramBot\Request::sendMessage($data);
-
-                $tChat->saveThis();
             }
         }
     }

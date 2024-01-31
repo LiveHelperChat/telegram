@@ -37,11 +37,7 @@ class TelegramLiveHelperChatActivator {
 
     public static function installOrUpdate()
     {
-        // GoogleBusinessMessage
         $incomingWebhook = \erLhcoreClassModelChatIncomingWebhook::findOne(['filter' => ['name' => 'TelegramIntegration']]);
-
-        $fbOptions = \erLhcoreClassModelChatConfig::fetch('fbmessenger_options');
-        $data = (array)$fbOptions->data;
 
         $incomingWebhookContent = file_get_contents('extension/lhctelegram/doc/telegram/incoming-webhook.json');
         $content = json_decode($incomingWebhookContent,true);
