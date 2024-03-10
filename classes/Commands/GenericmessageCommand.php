@@ -222,7 +222,12 @@ class GenericmessageCommand extends SystemCommand
 
                         $ignoreMessage = false;
                         $messageUserId = $operator->user_id;
+                        $messagesProcessed = [];
+                        $alwaysProcess = false;
+
                         if (strpos(trim($text), '!') === 0) {
+
+                            $lastMessageId = $chat->last_msg_id;
 
                             $statusCommand = \erLhcoreClassChatCommand::processCommand(array(
                                 'no_ui_update' => true,
@@ -234,15 +239,33 @@ class GenericmessageCommand extends SystemCommand
                             if ($statusCommand['processed'] === true) {
                                 $messageUserId = -1; // Message was processed set as internal message
 
+                                // Find a new possible bot messages and trigger message added events for third party integrations
+                                $botMessages = \erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [($chat->user_id > 0 ? $chat->user_id : -2), -2]],'filter' => array( 'chat_id' => $chat->id), 'filtergt' => array('id' => $lastMessageId)));
+
+                                foreach ($botMessages as $botMessage) {
+                                    $messagesProcessed[] = $botMessage->id;
+                                    $chat->last_message = $botMessage;
+                                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
+                                        'chat' => & $chat,
+                                        'msg' => $botMessage,
+                                        'no_afterwards_messages' => true,
+                                        'always_process' => true,
+                                        'no_auto_events' => true    // Some triggers updates last message and webhooks them self sends this event, we want to avoid that
+                                    ));
+                                }
+
                                 $rawMessage = !isset($statusCommand['raw_message']) ? $text : $statusCommand['raw_message'];
 
                                 $text = '[' . $operator->user->name_support . ']: ' . $rawMessage . ' ' . ($statusCommand['process_status'] != '' ? '|| ' . $statusCommand['process_status'] : '');
+
+                                $alwaysProcess = true;
                             }
 
                             if (isset($statusCommand['ignore']) && $statusCommand['ignore'] == true) {
                                 $ignoreMessage = true;
                                 if (isset($statusCommand['last_message'])) {
                                     $msg = $statusCommand['last_message'];
+                                    $chat->last_message = $msg;
                                     if (is_object($msg)) {
                                         $chat->last_msg_id = $msg->id;
                                         $chat->updateThis(['update' => ['last_msg_id']]);
@@ -359,16 +382,29 @@ class GenericmessageCommand extends SystemCommand
                             // We dispatch same event as we were using desktop client, because it force admins and users to resync chat for new messages
                             // This allows NodeJS users to know about new message. In this particular case it's admin users
                             // If operator has opened chat instantly sync
-                            \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
-                                'chat' => & $chat,
-                                'msg' => & $msg
-                            ));
+                            if (isset($msg) && !in_array($msg->id, $messagesProcessed)) {
+                                $chat->last_message = $msg;
+                                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array(
+                                    'chat' => & $chat,
+                                    'msg' => & $msg,
+                                    'always_process' => $alwaysProcess
+                                ));
+                            }
 
                             // If operator has closed a chat we need force back office sync
                             \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.nodjshelper_notify_delay', array(
                                 'chat' => & $chat
                             ));
 
+                        } else {
+
+                            if (isset($msg)) {
+                                $chat->last_message = $msg;
+                            }
+
+                            if (isset($msg) && !in_array($msg->id, $messagesProcessed)) {
+                                \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.web_add_msg_admin', array('msg' => & $msg,'chat' => & $chat));
+                            }
 
                         }
 

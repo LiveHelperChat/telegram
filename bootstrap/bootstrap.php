@@ -281,7 +281,7 @@ class erLhcoreClassExtensionLhctelegram
 
     public function messageAddedAdmin($params)
     {
-        if (isset($params['lhc_caller']['class']) && $params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand') {
+        if (isset($params['lhc_caller']['class']) && $params['lhc_caller']['class'] == 'Longman\TelegramBot\Commands\SystemCommands\GenericmessageCommand' && (!isset($params['always_process']) || $params['always_process'] === false)) {
             return;
         }
 
@@ -305,36 +305,44 @@ class erLhcoreClassExtensionLhctelegram
 
     public function messageAdded($params)
     {
+        static $messagesProcessed = [];
+
         $chat = $params['chat'];
         foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
             if ($tchat->bot->bot_client == 0) {
                 continue;
             }
+
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
-            $data = [
-                'chat_id' => $tchat->bot->group_chat_id,
-                'message_thread_id' => $tchat->tchat_id,
-                'parse_mode' => 'HTML',
-                'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
-            ];
 
-            if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
-                $data['disable_notification'] = true;
-            }
+            if (!in_array($params['msg']->id, $messagesProcessed)) {
+                $data = [
+                    'chat_id' => $tchat->bot->group_chat_id,
+                    'message_thread_id' => $tchat->tchat_id,
+                    'parse_mode' => 'HTML',
+                    'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
+                ];
 
-            $sendData = Longman\TelegramBot\Request::sendMessage($data);
+                if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                    $data['disable_notification'] = true;
+                }
 
-            if (!$sendData->isOk()) {
-                erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
-                    ezcLog::SUCCESS_AUDIT,
-                    array(
-                        'source' => 'lhc',
-                        'category' => 'telegram_exception',
-                        'line' => __LINE__,
-                        'file' => __FILE__,
-                        'object_id' => $chat->id
-                    )
-                );
+                $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                $messagesProcessed[] = $params['msg']->id;
+
+                if (!$sendData->isOk()) {
+                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'telegram_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $chat->id
+                        )
+                    );
+                }
             }
 
             if (isset($params['no_afterwards_messages']) && $params['no_afterwards_messages'] == true) {
@@ -344,6 +352,13 @@ class erLhcoreClassExtensionLhctelegram
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
             foreach ($botMessages as $botMessage) {
+
+                if (!in_array($botMessage->id, $messagesProcessed)) {
+                    $messagesProcessed[] = $botMessage->id;
+                } else {
+                    continue;
+                }
+
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
