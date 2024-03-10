@@ -221,7 +221,7 @@ class GenericmessageCommand extends SystemCommand
                         }
 
                         $ignoreMessage = false;
-
+                        $messageUserId = $operator->user_id;
                         if (strpos(trim($text), '!') === 0) {
 
                             $statusCommand = \erLhcoreClassChatCommand::processCommand(array(
@@ -232,6 +232,7 @@ class GenericmessageCommand extends SystemCommand
                             ));
 
                             if ($statusCommand['processed'] === true) {
+                                $messageUserId = -1; // Message was processed set as internal message
 
                                 $rawMessage = !isset($statusCommand['raw_message']) ? $text : $statusCommand['raw_message'];
 
@@ -240,6 +241,13 @@ class GenericmessageCommand extends SystemCommand
 
                             if (isset($statusCommand['ignore']) && $statusCommand['ignore'] == true) {
                                 $ignoreMessage = true;
+                                if (isset($statusCommand['last_message'])) {
+                                    $msg = $statusCommand['last_message'];
+                                    if (is_object($msg)) {
+                                        $chat->last_msg_id = $msg->id;
+                                        $chat->updateThis(['update' => ['last_msg_id']]);
+                                    }
+                                }
                             }
 
                             if (isset($statusCommand['info'])) {
@@ -257,7 +265,7 @@ class GenericmessageCommand extends SystemCommand
                             $msg = new \erLhcoreClassModelmsg();
                             $msg->msg = $text;
                             $msg->chat_id = $chat->id;
-                            $msg->user_id = $operator->user_id;
+                            $msg->user_id = $messageUserId;
                             $msg->time = time();
                             $msg->name_support = $operator->user->name_support;
 
