@@ -519,14 +519,26 @@ class erLhcoreClassExtensionLhctelegram
                     $sendData = Longman\TelegramBot\Request::sendMessage($data);
 
                     if (!$sendData->isOk()){
-                        throw new Exception('['.$sendData->getErrorCode().']'. $sendData->getDescription());
+                        erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                            ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $tChat->chat_id
+                            )
+                        );
                     }
 
                     $tChat->saveThis();
 
                     $db->commit();
+
                 } catch (Exception $e) {
+
                     $db->rollback();
+
                     erLhcoreClassLog::write($e->getMessage() . '-' . $e->getTraceAsString(),
                         ezcLog::SUCCESS_AUDIT,
                         array(
