@@ -336,6 +336,11 @@ class GenericmessageCommand extends SystemCommand
 
                                 if ($userData->invisible_mode == 0) {
 
+                                    $db = \ezcDbInstance::get();
+                                    $db->beginTransaction();
+                                    
+                                    $chat->syncAndLock('status');
+
                                     $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
 
                                     $chat->pnd_time = time() - 2;
@@ -347,6 +352,9 @@ class GenericmessageCommand extends SystemCommand
                                     $chat->usaccept = $userData->hide_online;
                                     $chat->operation_admin = "lhinst.updateVoteStatus(".$chat->id.");";
                                     $chat->saveThis();
+
+                                    $db->commit();
+                                    
 
                                     // If chat is transferred to pending state we don't want to process any old events
                                     $eventPending = \erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
@@ -368,6 +376,9 @@ class GenericmessageCommand extends SystemCommand
                                     $options = $chat->department->inform_options_array;
 
                                     \erLhcoreClassChatWorkflow::chatAcceptedWorkflow(array('department' => $chat->department,'options' => $options),$chat);
+
+
+
 
                                     $data = [
                                         'chat_id' => $chat_id,
