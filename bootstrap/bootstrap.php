@@ -316,6 +316,11 @@ class erLhcoreClassExtensionLhctelegram
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
 
             if (!in_array($params['msg']->id, $messagesProcessed)) {
+
+                if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
+                    continue;
+                }
+
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
