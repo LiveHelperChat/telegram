@@ -316,6 +316,13 @@ class erLhcoreClassExtensionLhctelegram
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
 
             if (!in_array($params['msg']->id, $messagesProcessed)) {
+
+                // remove following if you want enable autoresponder messages for operators chat
+                if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
+                    continue;
+                }
+                // end here
+
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
@@ -348,6 +355,12 @@ class erLhcoreClassExtensionLhctelegram
             if (isset($params['no_afterwards_messages']) && $params['no_afterwards_messages'] == true) {
                 continue;
             }
+
+            // remove following if you want enable autoresponder messages for operators chat
+            if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
+                continue;
+            }
+            // end here
 
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
@@ -415,6 +428,12 @@ class erLhcoreClassExtensionLhctelegram
             if ($tchat->bot->bot_client == 0) {
                 continue;
             }
+
+            // remove following if you want enable autoresponder messages for operators chat
+            if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
+                continue;
+            }
+            // end here
 
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
