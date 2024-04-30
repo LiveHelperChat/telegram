@@ -354,14 +354,9 @@ class GenericmessageCommand extends SystemCommand
                                     $chat->saveThis();
 
                                     $db->commit();
-                                    
 
                                     // If chat is transferred to pending state we don't want to process any old events
-                                    $eventPending = \erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
-
-                                    if ($eventPending instanceof \erLhcoreClassModelGenericBotChatEvent) {
-                                        $eventPending->removeThis();
-                                    }
+                                    \erLhcoreClassGenericBotWorkflow::removePreviousEvents($chat->id);
 
                                     \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.data_changed',array('chat' => & $chat, 'user_data' => $userData ));
 
