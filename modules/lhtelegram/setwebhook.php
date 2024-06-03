@@ -6,8 +6,19 @@ $item =  erLhcoreClassModelTelegramBot::fetch($Params['user_parameters']['id']);
 
 try {
 
+    if (!isset($_POST['csfr_token']) || !$currentUser->validateCSFRToken($_POST['csfr_token'])) {
+        erLhcoreClassModule::redirect('telegram/list');
+        exit;
+    }
+
     // Create Telegram API object
     $telegram = new Longman\TelegramBot\Telegram($item->bot_api, $item->bot_username);
+
+    $locates = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' );
+
+    if (isset($_POST['site_access']) && !empty($_POST['site_access']) && in_array($_POST['site_access'], $locates)) {
+        $item->site_access = $_POST['site_access'];
+    }
 
     // Set webhook
     $result = $telegram->setWebhook($item->callback_url);

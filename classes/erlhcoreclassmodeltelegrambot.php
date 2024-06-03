@@ -38,12 +38,12 @@ class erLhcoreClassModelTelegramBot
                 
             case 'callback_url':
                 if ($this->bot_client == 1) {
-                    $this->callback_url = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurldirect('telegram/callback'). '/' . $this->id;
+                    $this->callback_url = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurldirect(($this->site_access != '' ? '/' . $this->site_access : '') . '/telegram/callback'). '/' . $this->id;
                 } else {
                     $this->callback_url = null;
                     $callbackData = erLhcoreClassModelChatIncomingWebhook::findOne(['filter' => ['name' => 'TelegramIntegration']]);
                     if (is_object($callbackData)) {
-                        $this->callback_url = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect('webhooks/incoming') . '/' . $callbackData->identifier . '?telegram_bot_id=' . $this->id;
+                        $this->callback_url = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect( ($this->site_access != '' ? '/' . $this->site_access : '') . '/webhooks/incoming') . '/' . $callbackData->identifier . '?telegram_bot_id=' . $this->id;
                     }
                 }
                 return $this->callback_url;
@@ -77,6 +77,8 @@ class erLhcoreClassModelTelegramBot
     }
 
     public $id = null;
+
+    public $site_access = null;
 
     public $bot_username = null;
 

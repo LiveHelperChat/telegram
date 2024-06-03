@@ -17,7 +17,21 @@
         <td><?php echo $item->bot_username?></td>
         <td>
             <?php if ($item->callback_url !== null) : ?>
-                <?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?> <a title="<?php echo $item->callback_url?>" href="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>" class="btn btn-xs btn-info">Set webhook</a>
+
+            <form method="post" action="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>">
+                <?php include(erLhcoreClassDesign::designtpl('lhkernel/csfr_token.tpl.php'));?>
+                <div class="input-group">
+                    <select class="form-control form-control-sm w-50" name="site_access">
+                            <?php foreach (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' ) as $locale ) : ?>
+                                <option value="<?php echo $locale?>">Language - <?php echo $locale?></option>
+                            <?php endforeach; ?>
+                    </select>
+                    <span class="input-group-text">
+                        <?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?>&nbsp; <button title="<?php echo $item->callback_url?>" class="btn btn-xs btn-info">Set webhook</button>
+                    </span>
+                </div>
+            </form>
+
             <?php else : ?>
                 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','Please finish');?> <a href="<?php echo erLhcoreClassDesign::baseurl('telegram/options')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','configuration');?></a>
             <?php endif; ?>
