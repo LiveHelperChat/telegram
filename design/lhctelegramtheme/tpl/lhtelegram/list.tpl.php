@@ -20,10 +20,11 @@
 
             <form method="post" action="<?php echo erLhcoreClassDesign::baseurl('telegram/setwebhook')?>/<?php echo $item->id?>">
                 <?php include(erLhcoreClassDesign::designtpl('lhkernel/csfr_token.tpl.php'));?>
+                <span class="fs11">Language, after choosing a language click `Set webhook`. After setting webhook this option will remain the same, but webhook URL will be set to a chosen language.</span>
                 <div class="input-group">
                     <select class="form-control form-control-sm w-50" name="site_access">
                             <?php foreach (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' ) as $locale ) : ?>
-                                <option value="<?php echo $locale?>">Language - <?php echo $locale?></option>
+                                <option value="<?php echo $locale?>"><?php echo $locale?></option>
                             <?php endforeach; ?>
                     </select>
                     <span class="input-group-text">
