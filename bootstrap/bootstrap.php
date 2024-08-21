@@ -13,8 +13,6 @@ class erLhcoreClassExtensionLhctelegram
     {
         $this->registerAutoload();
 
-        include_once 'extension/lhctelegram/vendor/autoload.php';
-
         $dispatcher = erLhcoreClassChatEventDispatcher::getInstance();
 
         $dispatcher->listen('chat.delete', array(
