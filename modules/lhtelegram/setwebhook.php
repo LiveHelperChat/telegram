@@ -21,7 +21,7 @@ try {
     }
 
     // Set webhook
-    $result = $telegram->setWebhook($item->callback_url);
+    $result = $telegram->setWebhook($item->callback_url,['allowed_updates' => ['message','callback_query','message_reaction','edited_message','inline_query']]);
     if ($result->isOk()) {
         $item->webhook_set = 1;
         $item->saveThis();
