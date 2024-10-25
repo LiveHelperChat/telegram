@@ -4,7 +4,8 @@ This extension allows for direct support of Telegram bots in Live Helper Chat. I
 
 ## Requirements
 
-Minimum version required: Live Helper Chat 4.27v.
+ * Minimum version required: Live Helper Chat 4.27v.
+ * Webhooks has to be enabled - https://github.com/LiveHelperChat/livehelperchat/blob/master/lhc_web/settings/settings.ini.default.php#L86
 
 ## Upgrading
 
