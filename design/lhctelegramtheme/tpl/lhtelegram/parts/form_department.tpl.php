@@ -1,4 +1,10 @@
-<label><input type="checkbox" name="bot_client" value="1" <?php if ($item->bot_client == 1) : ?>checked="checked"<?php endif; ?> > This bot acts as a client</label>
+<div>
+    <label><input type="checkbox" name="bot_client" value="1" <?php if ($item->bot_client == 1) : ?>checked="checked"<?php endif; ?> > This bot acts as a client</label>
+</div>
+
+<div>
+    <label><input type="checkbox" name="delete_on_close" value="1" <?php if ($item->delete_on_close == 1) : ?>checked="checked"<?php endif; ?> > Delete topic on chat close/delete</label>
+</div>
 
 <div class="form-group">
     <label>Group Chat ID</label>

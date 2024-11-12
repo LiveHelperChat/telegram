@@ -114,11 +114,20 @@ class erLhcoreClassTelegramValidator
             'bot_client' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'delete_on_close' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
             'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
 
         $form = new ezcInputForm(INPUT_POST, $definition);
+
+        if ($form->hasValidData('delete_on_close') && $form->delete_on_close == true) {
+            $item->delete_on_close = 1;
+        } else {
+            $item->delete_on_close = 0;
+        }
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {
             if ($item->bot_client != 1) {

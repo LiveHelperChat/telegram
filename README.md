@@ -82,6 +82,7 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 * Same visitor chats are written to the same topic as long Online Visitor record exists. You can extend it to be valid for one year in `Settings -> Chat configuration -> Online tracking -> How many days keep records of online users.`
 * Integration supports quick reply buttons. Using these, you can make a quick navigation.
 * Telegram API has limit of 20MB per file size limit. Please make sure you set the appropriate limit in lhc files sections.
+* You now can set bot option to delete topic on chat close/delete to keep it clean.
 
 Since version 3.36v, you can set your online condition to `Always online`, and you won't have to do anything else.
 

@@ -23,7 +23,8 @@ class erLhcoreClassModelTelegramBot
             'bot_client' => $this->bot_client,
             'chat_timeout' => $this->chat_timeout,
             'bot_disabled' => $this->bot_disabled,
-            'group_chat_id' => $this->group_chat_id
+            'group_chat_id' => $this->group_chat_id,
+            'delete_on_close' => $this->delete_on_close
         );
     }  
 
@@ -92,6 +93,7 @@ class erLhcoreClassModelTelegramBot
 
     public $bot_disabled = 0;
     public $group_chat_id = 0;
+    public $delete_on_close = 0;
 
     public $chat_timeout = 259200;
 }

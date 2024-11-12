@@ -20,6 +20,11 @@ class erLhcoreClassExtensionLhctelegram
             'deleteChat'
         ));
 
+        $dispatcher->listen('chat.close', array(
+            $this,
+            'closeChat'
+        ));
+
         $dispatcher->listen('instance.extensions_structure', array(
             $this,
             'checkStructure'
@@ -337,7 +342,7 @@ class erLhcoreClassExtensionLhctelegram
                 $messagesProcessed[] = $params['msg']->id;
 
                 if (!$sendData->isOk()) {
-                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                    erLhcoreClassLog::write('sendMessagesss ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
                         ezcLog::SUCCESS_AUDIT,
                         array(
                             'source' => 'lhc',
@@ -382,7 +387,7 @@ class erLhcoreClassExtensionLhctelegram
                 $sendData = Longman\TelegramBot\Request::sendMessage($data);
 
                 if (!$sendData->isOk()) {
-                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                    erLhcoreClassLog::write('SendMessage BOT ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
                         ezcLog::SUCCESS_AUDIT,
                         array(
                             'source' => 'lhc',
@@ -513,8 +518,21 @@ class erLhcoreClassExtensionLhctelegram
                         }
                     }
 
+                    $previousChatMessages = '';
+
+                    if ($bot->bot->delete_on_close == 1 && $params['chat']->online_user_id > 0 && is_object($params['chat']->online_user) && is_object($params['chat']->online_user->previous_chat)) {
+                        $previousChatMessagesList = [];
+                        foreach (array_reverse(erLhcoreClassModelmsg::getList(array('limit' => 15, 'sort' => 'id DESC', 'filternotin' => ['user_id' => [-1]], 'filter' => array('chat_id' => $params['chat']->online_user->previous_chat->id)))) as $botMessage) {
+                            $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                        }
+
+                        if (!empty($previousChatMessagesList)){
+                            $previousChatMessages = "\n├──Previous chat messages: \n" . implode("\n", $previousChatMessagesList);
+                        }
+                    }
+
                     $visitor = array();
-                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') . "\n├──Nick: " . $params['chat']->nick . "\n└──Messages:";
+                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') .  "\n├──Nick: " . $params['chat']->nick . $previousChatMessages . "\n└──Messages:";
 
                     // Collect all chat messages including bot
                     $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
@@ -535,17 +553,38 @@ class erLhcoreClassExtensionLhctelegram
 
                     $sendData = Longman\TelegramBot\Request::sendMessage($data);
 
-                    if (!$sendData->isOk()){
-                        erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
-                            ezcLog::SUCCESS_AUDIT,
-                            array(
-                                'source' => 'lhc',
-                                'category' => 'telegram_exception',
-                                'line' => __LINE__,
-                                'file' => __FILE__,
-                                'object_id' => $tChat->chat_id
-                            )
-                        );
+                    if (!$sendData->isOk()) {
+
+                        // Try first time to create a topic if old one is gone
+                        if ($sendData->getErrorCode() == 400 && strpos($sendData->getDescription(),'message thread not found') !== false) {
+
+                            $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
+                                'chat_id' => $bot->bot->group_chat_id,
+                                'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
+                            ]);
+
+                            if ($sendData->isOk()) {
+                                $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();
+                            } else {
+                                throw new Exception('['.$sendData->getErrorCode().']'. $sendData->getDescription());
+                            }
+                        }
+
+                        $data['message_thread_id'] = $tChat->tchat_id;
+                        $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                        if (!$sendData->isOk()) {
+                            erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                                ezcLog::SUCCESS_AUDIT,
+                                array(
+                                    'source' => 'lhc',
+                                    'category' => 'telegram_exception',
+                                    'line' => __LINE__,
+                                    'file' => __FILE__,
+                                    'object_id' => $tChat->chat_id
+                                )
+                            );
+                        }
                     }
 
                     $tChat->saveThis();
@@ -611,10 +650,51 @@ class erLhcoreClassExtensionLhctelegram
      */
     public function deleteChat($params)
     {
+        $this->closeChat($params);
+
         $db = ezcDbInstance::get();
         $stmt = $db->prepare('DELETE FROM lhc_telegram_chat WHERE chat_id_internal = :chat_id_internal');
         $stmt->bindValue(':chat_id_internal', ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), PDO::PARAM_INT);
         $stmt->execute();
+    }
+
+    /*
+     * Delete forum topic if configured
+     * */
+    public function closeChat($params)
+    {
+        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
+
+            if ($tchat->bot->bot_client == 0 || $tchat->bot->delete_on_close == 0) {
+                continue;
+            }
+
+            if ($tchat->tchat_id > 0) {
+
+                $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
+
+                $sendData = Longman\TelegramBot\Request::send('deleteForumTopic', [
+                    'chat_id' => $tchat->bot->group_chat_id,
+                    'message_thread_id' => $tchat->tchat_id
+                ]);
+
+                $tchat->tchat_id = 0;
+                $tchat->updateThis(['update' => ['tchat_id']]);
+
+                if (!$sendData->isOk()) {
+                    erLhcoreClassLog::write('deleteForumTopic ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'telegram_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $params['chat']->id
+                        )
+                    );
+                }
+            }
+        }
     }
 
     /**
