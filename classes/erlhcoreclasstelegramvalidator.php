@@ -117,6 +117,9 @@ class erLhcoreClassTelegramValidator
             'delete_on_close' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'notify_page_change' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
             'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
@@ -127,6 +130,12 @@ class erLhcoreClassTelegramValidator
             $item->delete_on_close = 1;
         } else {
             $item->delete_on_close = 0;
+        }
+        
+        if ($form->hasValidData('notify_page_change') && $form->notify_page_change == true) {
+            $item->notify_page_change = 1;
+        } else {
+            $item->notify_page_change = 0;
         }
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {

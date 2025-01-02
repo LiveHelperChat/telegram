@@ -90,6 +90,10 @@ class erLhcoreClassExtensionLhctelegram
         $dispatcher->listen('chat.webhook_incoming_chat_started', array(
             $this,'incommingChatStarted')
         );
+
+        $dispatcher->listen('onlineuser.pageview_logged', array(
+            $this,'pageViewLogged')
+        );
     }
 
     /*
@@ -306,6 +310,49 @@ class erLhcoreClassExtensionLhctelegram
         $this->messageAdded($params);
     }
 
+    public function pageViewLogged($params)
+    {
+        if (($params['ou']->id > 0 && $params['ou']->chat_id > 0) !== true) {
+            return;
+        }
+
+        if (!isset($params['url_changed']) || $params['url_changed'] === false) {
+            return;
+        }
+
+        foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['ou']->id > 0 ? ($params['ou']->id * -1) : $params['ou']->chat_id), 'type' => 1]]) as $tchat) {
+            if ($tchat->bot->bot_client == 0 || $tchat->bot->notify_page_change == 0) {
+                continue;
+            }
+
+            $chat = $params['ou']->chat;
+            if (!is_object($chat)) {
+                continue;
+            }
+
+            $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
+
+            $sendData = Longman\TelegramBot\Request::send('editForumTopic', [
+                'chat_id' => $tchat->bot->group_chat_id,
+                'message_thread_id' => $tchat->tchat_id,
+                'name' => mb_substr('[' . $chat->department . '] ' . $chat->nick . ' #' . $chat->id . ($params['ou']->ip != '' ? ' | ' . $params['ou']->ip : '') . ($params['ou']->user_country_code != '' ? ' | ' . strtoupper($params['ou']->user_country_code) : '') . ($params['ou']->current_page != '' ? ' | '. ltrim($params['ou']->current_page,'/') : '') . ($params['ou']->page_title != '' ? ' | '.$params['ou']->page_title : ''),0,128)
+            ]);
+
+            if (!$sendData->isOk()) {
+                erLhcoreClassLog::write('editForumTopic ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'telegram_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => $params['ou']->id
+                    )
+                );
+            }
+        }
+    }
+
     public function messageAdded($params)
     {
         static $messagesProcessed = [];
@@ -508,7 +555,7 @@ class erLhcoreClassExtensionLhctelegram
                     if ($tChat->tchat_id == null) {
                         $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                             'chat_id' => $bot->bot->group_chat_id,
-                            'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
+                            'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
                         ]);
 
                         if ($sendData->isOk()) {
@@ -532,7 +579,7 @@ class erLhcoreClassExtensionLhctelegram
                     }
 
                     $visitor = array();
-                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') .  "\n├──Nick: " . $params['chat']->nick . $previousChatMessages . "\n└──Messages:";
+                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') .  "\n├──Nick: " . $params['chat']->nick .(isset($params['chat']->referrer) && !empty($params['chat']->referrer) ? "\n├──Referrer: " . ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? "\n├──Page title: " . $params['chat']->online_user->page_title : '') . (isset($params['chat']->ip) && !empty($params['chat']->ip) ? "\n├──IP: " . $params['chat']->ip  : '') . (isset($params['chat']->country_name) && !empty($params['chat']->country_name) ? "\n├──GEO: " . $params['chat']->country_name : ''). $previousChatMessages . "\n└──Messages:";
 
                     // Collect all chat messages including bot
                     $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
@@ -560,7 +607,7 @@ class erLhcoreClassExtensionLhctelegram
 
                             $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                                 'chat_id' => $bot->bot->group_chat_id,
-                                'name' => '[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id
+                                'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
                             ]);
 
                             if ($sendData->isOk()) {

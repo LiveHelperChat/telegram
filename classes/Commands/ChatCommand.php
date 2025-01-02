@@ -97,7 +97,7 @@ class ChatCommand extends UserCommand
                 $data = [
                     'chat_id' => $chat_id,
                     'message_thread_id' => $tchat->tchat_id,
-                    'text'    => "Operator: ". (string)$chat->n_off_full . " [{$chat->user_id}] " . $chat->id,
+                    'text'    => "Operator: ". (string)$chat->n_off_full . " [{$chat->user_id}] " . $chat->id . (is_object($chat->online_user) && $chat->online_user->ip != '' ? "\nIP - ".$chat->online_user->ip : '') . ($chat->country_name != '' ? "\nGEO - ".$chat->country_name : '') . (is_object($chat->online_user) && $chat->online_user->current_page != '' ? "\nPage URL - ". ltrim($chat->online_user->current_page,"/") : '') . (is_object($chat->online_user) && $chat->online_user->page_title != '' ? "\nPage title - ".$chat->online_user->page_title : ''),
                     'reply_markup' => $inline_keyboard,
                 ];
 

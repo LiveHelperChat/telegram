@@ -427,11 +427,11 @@ class GenericmessageCommand extends SystemCommand
                     }
                 }
 
-            } elseif ($type != 'forum_topic_created') {
+            } elseif ($type != 'forum_topic_created' && $type != 'forum_topic_edited') {
                 $data = [
                     'chat_id' => $chat_id,
                     'message_thread_id' => $message->getMessageThreadId(),
-                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat",
+                    'text'    => "Operator could not be found! Have you registered yourself within Live Helper Chat [".$type."]",
                 ];
                 return Request::sendMessage($data);
             }

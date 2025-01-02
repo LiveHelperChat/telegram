@@ -16,7 +16,7 @@ foreach (['bot_username','bot_api'] as $posAttr) {
     $def->properties[$posAttr]->propertyType = ezcPersistentObjectProperty::PHP_TYPE_STRING;
 }
 
-foreach (['delete_on_close','group_chat_id','chat_timeout','bot_client','bot_disabled','dep_id','webhook_set'] as $posAttr) {
+foreach (['delete_on_close','group_chat_id','chat_timeout','bot_client','bot_disabled','dep_id','webhook_set','notify_page_change'] as $posAttr) {
     $def->properties[$posAttr] = new ezcPersistentObjectProperty();
     $def->properties[$posAttr]->columnName   = $posAttr;
     $def->properties[$posAttr]->propertyName = $posAttr;
