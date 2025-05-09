@@ -14,7 +14,7 @@
     <?php foreach ($items as $item) : ?>
     <tr>
         <td><?php echo $item->id?></td>
-        <td><?php echo $item->bot_username?></td>
+        <td><?php echo htmlspecialchars($item->bot_username)?></td>
         <td>
             <?php if ($item->callback_url !== null) : ?>
 
@@ -24,7 +24,7 @@
                 <div class="input-group">
                     <select class="form-control form-control-sm w-50" name="site_access">
                             <?php foreach (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' ) as $locale ) : ?>
-                                <option value="<?php echo $locale?>"><?php echo $locale?></option>
+                                <option value="<?php echo htmlspecialchars($locale)?>"><?php echo htmlspecialchars($locale)?></option>
                             <?php endforeach; ?>
                     </select>
                     <span class="input-group-text">
