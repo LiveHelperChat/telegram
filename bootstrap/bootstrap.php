@@ -292,7 +292,8 @@ class erLhcoreClassExtensionLhctelegram
             return;
         }
 
-        if (isset($params['source']) && $params['source'] == 'webhook') {
+        // We want to by pass resque worker messages from rest_api
+        if (isset($params['source']) && $params['source'] == 'webhook' && (!isset($params['sub_source']) || $params['sub_source'] != 'rest_api_worker')) {
             return;
         }
 
@@ -419,6 +420,10 @@ class erLhcoreClassExtensionLhctelegram
                 if (!in_array($botMessage->id, $messagesProcessed)) {
                     $messagesProcessed[] = $botMessage->id;
                 } else {
+                    continue;
+                }
+
+                if (empty($botMessage->msg)) {
                     continue;
                 }
 
