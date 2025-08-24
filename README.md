@@ -83,6 +83,10 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 * Integration supports quick reply buttons. Using these, you can make a quick navigation.
 * Telegram API has limit of 20MB per file size limit. Please make sure you set the appropriate limit in lhc files sections.
 * You now can set bot option to delete topic on chat close/delete to keep it clean.
+* In some cases LHC tries to send empty body message you can avoid that by
+  * Setting in Rest API call `Do not send request if this variable is empty` to `{{msg_html_nobr}}`
+  * OR
+  * Modifying `chat.web_add_msg_admin` webhook and adding condition `{args.chat.last_message.msg}` `Not empty`. It Will work only if php-resque is used.
 
 Since version 3.36v, you can set your online condition to `Always online`, and you won't have to do anything else.
 
