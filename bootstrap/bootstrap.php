@@ -493,6 +493,11 @@ class erLhcoreClassExtensionLhctelegram
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
             foreach ($botMessages as $botMessage) {
+
+                if (empty($botMessage->msg)) {
+                    continue;
+                }
+
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
@@ -575,6 +580,9 @@ class erLhcoreClassExtensionLhctelegram
                     if ($bot->bot->delete_on_close == 1 && $params['chat']->online_user_id > 0 && is_object($params['chat']->online_user) && is_object($params['chat']->online_user->previous_chat)) {
                         $previousChatMessagesList = [];
                         foreach (array_reverse(erLhcoreClassModelmsg::getList(array('limit' => 15, 'sort' => 'id DESC', 'filternotin' => ['user_id' => [-1]], 'filter' => array('chat_id' => $params['chat']->online_user->previous_chat->id)))) as $botMessage) {
+                            if (empty($botMessage->msg)) {
+                                continue;
+                            }
                             $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                         }
 
@@ -589,6 +597,9 @@ class erLhcoreClassExtensionLhctelegram
                     // Collect all chat messages including bot
                     $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
                     foreach ($botMessages as $botMessage) {
+                        if (empty($botMessage->msg)) {
+                            continue;
+                        }
                         $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                     }
 
