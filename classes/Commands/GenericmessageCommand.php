@@ -176,6 +176,11 @@ class GenericmessageCommand extends SystemCommand
     public function execute(): ServerResponse
     {
         $message = $this->getMessage();
+
+        if (!is_object($message)) {
+            return Request::emptyResponse();
+        }
+
         $chat_id = $message->getChat()->getId();
         $type = $message->getType();
 
