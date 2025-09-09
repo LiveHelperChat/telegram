@@ -26,6 +26,14 @@
                 "extra": ""
             },
             {
+                "field": "last_msg_id",
+                "type": "bigint(20) unsigned",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
                 "field": "type",
                 "type": "tinyint(1) unsigned",
                 "null": "NO",

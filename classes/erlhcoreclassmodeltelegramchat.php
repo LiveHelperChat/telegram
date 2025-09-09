@@ -22,7 +22,8 @@ class erLhcoreClassModelTelegramChat
             'ctime' => $this->ctime,
             'utime' => $this->utime,
             'type' => $this->type,
-            'chat_id_internal' => $this->chat_id_internal
+            'chat_id_internal' => $this->chat_id_internal,
+            'last_msg_id' => $this->last_msg_id
         );
     }
 
@@ -67,6 +68,8 @@ class erLhcoreClassModelTelegramChat
     // 0 - Standard chat
     // 1 - Topic chat Bot As Client
     public $type = 0;
+
+    public $last_msg_id = 0;
 
 }
 

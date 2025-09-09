@@ -356,8 +356,6 @@ class erLhcoreClassExtensionLhctelegram
 
     public function messageAdded($params)
     {
-        static $messagesProcessed = [];
-
         $chat = $params['chat'];
         foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
             if ($tchat->bot->bot_client == 0) {
@@ -366,7 +364,10 @@ class erLhcoreClassExtensionLhctelegram
 
             $telegram = new Longman\TelegramBot\Telegram($tchat->bot->bot_api, $tchat->bot->bot_username);
 
-            if (!in_array($params['msg']->id, $messagesProcessed)) {
+            if ($params['msg']->id > $tchat->last_msg_id) {
+
+                $tchat->last_msg_id = $params['msg']->id;
+                $tchat->updateThis(['update' => ['last_msg_id']]);
 
                 // remove following if you want enable autoresponder messages for operators chat
                 if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
@@ -386,8 +387,6 @@ class erLhcoreClassExtensionLhctelegram
                 }
 
                 $sendData = Longman\TelegramBot\Request::sendMessage($data);
-
-                $messagesProcessed[] = $params['msg']->id;
 
                 if (!$sendData->isOk()) {
                     erLhcoreClassLog::write('sendMessagesss ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -415,13 +414,16 @@ class erLhcoreClassExtensionLhctelegram
 
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
+
             foreach ($botMessages as $botMessage) {
 
-                if (!in_array($botMessage->id, $messagesProcessed)) {
-                    $messagesProcessed[] = $botMessage->id;
-                } else {
+                if ($botMessage->id <= $tchat->last_msg_id) {
                     continue;
+                } else {
+                    $tchat->last_msg_id = $botMessage->id;
                 }
+
+                $tchat->updateThis(['update' => ['last_msg_id']]);
 
                 if (empty($botMessage->msg)) {
                     continue;
@@ -493,6 +495,9 @@ class erLhcoreClassExtensionLhctelegram
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
             foreach ($botMessages as $botMessage) {
+
+                $tChat->last_msg_id = $botMessage->id;
+                $tchat->updateThis(['update' => ['last_msg_id']]);
 
                 if (empty($botMessage->msg)) {
                     continue;
@@ -597,6 +602,7 @@ class erLhcoreClassExtensionLhctelegram
                     // Collect all chat messages including bot
                     $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
                     foreach ($botMessages as $botMessage) {
+                        $tChat->last_msg_id = $botMessage->id;
                         if (empty($botMessage->msg)) {
                             continue;
                         }
