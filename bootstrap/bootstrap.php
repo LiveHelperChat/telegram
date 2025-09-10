@@ -496,7 +496,7 @@ class erLhcoreClassExtensionLhctelegram
             $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
             foreach ($botMessages as $botMessage) {
 
-                $tChat->last_msg_id = $botMessage->id;
+                $tchat->last_msg_id = $botMessage->id;
                 $tchat->updateThis(['update' => ['last_msg_id']]);
 
                 if (empty($botMessage->msg)) {
