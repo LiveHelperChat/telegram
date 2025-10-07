@@ -357,7 +357,14 @@ class erLhcoreClassExtensionLhctelegram
     public function messageAdded($params)
     {
         $chat = $params['chat'];
+        $db = ezcDbInstance::get();
+
         foreach (erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
+
+            $db->beginTransaction();
+            $tchat->syncAndLock('`last_msg_id`');
+            $db->commit();
+
             if ($tchat->bot->bot_client == 0) {
                 continue;
             }
@@ -366,8 +373,12 @@ class erLhcoreClassExtensionLhctelegram
 
             if ($params['msg']->id > $tchat->last_msg_id) {
 
+                $db->beginTransaction();
+                $tchat->syncAndLock('`id`');
                 $tchat->last_msg_id = $params['msg']->id;
                 $tchat->updateThis(['update' => ['last_msg_id']]);
+                $db->commit();
+
 
                 // remove following if you want enable autoresponder messages for operators chat
                 if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
@@ -410,20 +421,25 @@ class erLhcoreClassExtensionLhctelegram
             if (isset($params['msg']->meta_msg_array['content']['auto_responder'])) {
                 continue;
             }
-            // end here
+
 
             // Send bot responses if any
             $botMessages = erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
 
             foreach ($botMessages as $botMessage) {
 
+                $db->beginTransaction();
+                $tchat->syncAndLock('`last_msg_id`');
+
                 if ($botMessage->id <= $tchat->last_msg_id) {
+                    $db->commit();
                     continue;
                 } else {
                     $tchat->last_msg_id = $botMessage->id;
                 }
 
                 $tchat->updateThis(['update' => ['last_msg_id']]);
+                $db->commit();
 
                 if (empty($botMessage->msg)) {
                     continue;
