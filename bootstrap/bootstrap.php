@@ -386,11 +386,21 @@ class erLhcoreClassExtensionLhctelegram
                 }
                 // end here
 
+                if (isset($params['msg']->meta_msg_array['content']['attachements'])) {
+                    $embedCodes = [];
+                    foreach ($params['msg']->meta_msg_array['content']['attachements'] as $messageAttachment) {
+                        if (isset($messageAttachment['id']) && isset($messageAttachment['security_hash'])) {
+                            $embedCodes[] = '[file=' . $messageAttachment['id'] . '_' . $messageAttachment['security_hash'] . ']';
+                        }
+                    }
+                }
+                
+                
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
                     'parse_mode' => 'HTML',
-                    'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
+                    'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg . (!empty($embedCodes) ? "\n".implode("\n",$embedCodes) : ''), array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
                 ];
 
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
