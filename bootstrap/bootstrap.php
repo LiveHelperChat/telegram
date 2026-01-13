@@ -394,8 +394,7 @@ class erLhcoreClassExtensionLhctelegram
                         }
                     }
                 }
-                
-                
+
                 $data = [
                     'chat_id' => $tchat->bot->group_chat_id,
                     'message_thread_id' => $tchat->tchat_id,
@@ -408,6 +407,16 @@ class erLhcoreClassExtensionLhctelegram
                 }
 
                 $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && str_contains( $sendData->getDescription(), 'TOPIC_DELETED') === true) {
+                    // Reset telegram chat
+                    $tchat->tchat_id = 0;
+                    $tchat->updateThis(['update' => ['tchat_id']]);
+
+                    // Process request as a new chat just
+                    $this->chatStarted(['chat' => $chat]);
+                    return;
+                }
 
                 if (!$sendData->isOk()) {
                     erLhcoreClassLog::write('sendMessagesss ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -593,7 +602,7 @@ class erLhcoreClassExtensionLhctelegram
 
                     $telegram = new Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
 
-                    if ($tChat->tchat_id == null) {
+                    if ($tChat->tchat_id == null || $tChat->tchat_id == 0) {
                         $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                             'chat_id' => $bot->bot->group_chat_id,
                             'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
@@ -667,7 +676,7 @@ class erLhcoreClassExtensionLhctelegram
                     if (!$sendData->isOk()) {
 
                         // Try first time to create a topic if old one is gone
-                        if ($sendData->getErrorCode() == 400 && strpos($sendData->getDescription(),'message thread not found') !== false) {
+                        if ($sendData->getErrorCode() == 400 && (str_contains($sendData->getDescription(), 'message thread not found') || str_contains($sendData->getDescription(), 'TOPIC_DELETED'))) {
 
                             $sendData = Longman\TelegramBot\Request::send('createForumTopic', [
                                 'chat_id' => $bot->bot->group_chat_id,
