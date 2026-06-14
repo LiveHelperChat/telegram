@@ -354,6 +354,169 @@ class erLhcoreClassExtensionLhctelegram
         }
     }
 
+    private function stripTelegramFileEmbeds($text)
+    {
+        return trim(preg_replace('/\[file=\d+_[a-f0-9]{32}\]/i', '', (string)$text));
+    }
+
+    private function getTelegramMessageFiles($msg)
+    {
+        $files = array();
+        $seen = array();
+
+        if (isset($msg->meta_msg_array['content']['attachements']) && is_array($msg->meta_msg_array['content']['attachements'])) {
+            foreach ($msg->meta_msg_array['content']['attachements'] as $messageAttachment) {
+                if (isset($messageAttachment['id']) && isset($messageAttachment['security_hash'])) {
+                    $this->appendTelegramMessageFile($files, $seen, $messageAttachment['id'], $messageAttachment['security_hash']);
+                }
+            }
+        }
+
+        if (preg_match_all('/\[file=(\d+)_([a-f0-9]{32})\]/i', (string)$msg->msg, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $this->appendTelegramMessageFile($files, $seen, $match[1], $match[2]);
+            }
+        }
+
+        return $files;
+    }
+
+    private function appendTelegramMessageFile(& $files, & $seen, $id, $hash)
+    {
+        $id = (int)$id;
+        $hash = (string)$hash;
+        $key = $id . '_' . $hash;
+
+        if (isset($seen[$key])) {
+            return;
+        }
+
+        try {
+            $file = erLhcoreClassModelChatFile::fetch($id);
+        } catch (Exception $e) {
+            return;
+        }
+
+        if (!($file instanceof erLhcoreClassModelChatFile) || strtolower($file->security_hash) !== strtolower($hash)) {
+            return;
+        }
+
+        $seen[$key] = true;
+        $files[] = array(
+            'file' => $file,
+            'embed' => '[file=' . $file->id . '_' . $file->security_hash . ']'
+        );
+    }
+
+    private function getTelegramFileCaption($msg, $chat, $file, $messageText = null)
+    {
+        $sender = $msg->name_support != '' ? '🤖 [' . $msg->name_support . ']' : '👤 [' . $chat->nick . ']';
+        $messageText = $messageText === null ? $this->stripTelegramFileEmbeds($msg->msg) : trim((string)$messageText);
+
+        if ($messageText !== '') {
+            $caption = $sender . ': ' . $messageText;
+        } elseif (strpos(strtolower((string)$file->type), 'image/') === 0) {
+            $caption = $sender;
+        } elseif ($this->isMeaningfulTelegramUploadName($file)) {
+            $caption = $sender . ': ' . $file->upload_name;
+        } else {
+            $caption = $sender;
+        }
+
+        return htmlspecialchars(mb_substr($caption, 0, 900), ENT_QUOTES, 'UTF-8');
+    }
+
+    private function isMeaningfulTelegramUploadName($file)
+    {
+        $uploadName = trim((string)$file->upload_name);
+
+        if ($uploadName === '') {
+            return false;
+        }
+
+        if (mb_strlen($uploadName) <= 2 && strpos($uploadName, '.') === false) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function sendTelegramChatFile($tchat, $fileData, $caption, $disableNotification = false)
+    {
+        $file = $fileData['file'];
+
+        if (!file_exists($file->file_path_server) || !is_readable($file->file_path_server)) {
+            return false;
+        }
+
+        $extension = strtolower((string)$file->extension);
+        $type = strtolower((string)$file->type);
+        $method = 'sendDocument';
+        $field = 'document';
+
+        if (in_array($extension, array('jpg', 'jpeg', 'png', 'webp')) || in_array($type, array('image/jpeg', 'image/png', 'image/webp'))) {
+            $method = 'sendPhoto';
+            $field = 'photo';
+        } elseif ($extension === 'ogg' || $type === 'audio/ogg') {
+            $method = 'sendVoice';
+            $field = 'voice';
+        } elseif (in_array($extension, array('mp3', 'm4a')) || in_array($type, array('audio/mpeg', 'audio/mp4'))) {
+            $method = 'sendAudio';
+            $field = 'audio';
+        } elseif ($extension === 'mp4' || $type === 'video/mp4') {
+            $method = 'sendVideo';
+            $field = 'video';
+        }
+
+        $data = array(
+            'chat_id' => $tchat->bot->group_chat_id,
+            'message_thread_id' => $tchat->tchat_id,
+            'parse_mode' => 'HTML',
+            $field => Longman\TelegramBot\Request::encodeFile($file->file_path_server)
+        );
+
+        if ($caption !== '') {
+            $data['caption'] = $caption;
+        }
+
+        if ($disableNotification === true) {
+            $data['disable_notification'] = true;
+        }
+
+        try {
+            $sendData = Longman\TelegramBot\Request::send($method, $data);
+        } catch (Exception $e) {
+            erLhcoreClassLog::write('SendFile exception '.$e->getMessage(),
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'telegram_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $file->chat_id
+                )
+            );
+
+            return false;
+        }
+
+        if (!$sendData->isOk()) {
+            erLhcoreClassLog::write('SendFile ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'telegram_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $file->chat_id
+                )
+            );
+
+            return false;
+        }
+
+        return true;
+    }
     public function messageAdded($params)
     {
         $chat = $params['chat'];
@@ -386,49 +549,68 @@ class erLhcoreClassExtensionLhctelegram
                 }
                 // end here
 
-                if (isset($params['msg']->meta_msg_array['content']['attachements'])) {
-                    $embedCodes = [];
-                    foreach ($params['msg']->meta_msg_array['content']['attachements'] as $messageAttachment) {
-                        if (isset($messageAttachment['id']) && isset($messageAttachment['security_hash'])) {
-                            $embedCodes[] = '[file=' . $messageAttachment['id'] . '_' . $messageAttachment['security_hash'] . ']';
-                        }
+                $telegramFiles = $this->getTelegramMessageFiles($params['msg']);
+                $messageText = $this->stripTelegramFileEmbeds($params['msg']->msg);
+
+                $sendData = null;
+
+                if ($messageText !== '' && empty($telegramFiles)) {
+                    $data = [
+                        'chat_id' => $tchat->bot->group_chat_id,
+                        'message_thread_id' => $tchat->tchat_id,
+                        'parse_mode' => 'HTML',
+                        'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
+                    ];
+
+                    if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                        $data['disable_notification'] = true;
+                    }
+
+                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                    if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && str_contains( $sendData->getDescription(), 'TOPIC_DELETED') === true) {
+                        // Reset telegram chat
+                        $tchat->tchat_id = 0;
+                        $tchat->updateThis(['update' => ['tchat_id']]);
+
+                        // Process request as a new chat just
+                        $this->chatStarted(['chat' => $chat]);
+                        return;
+                    }
+
+                    if (!$sendData->isOk()) {
+                        erLhcoreClassLog::write('sendMessagesss ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                            ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $chat->id
+                            )
+                        );
                     }
                 }
 
-                $data = [
-                    'chat_id' => $tchat->bot->group_chat_id,
-                    'message_thread_id' => $tchat->tchat_id,
-                    'parse_mode' => 'HTML',
-                    'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($params['msg']->msg . (!empty($embedCodes) ? "\n".implode("\n",$embedCodes) : ''), array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
-                ];
+                if (!empty($telegramFiles) && ($sendData === null || $sendData->isOk())) {
+                    $failedEmbedCodes = array();
+                    $fileIndex = 0;
 
-                if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
-                    $data['disable_notification'] = true;
-                }
+                    foreach ($telegramFiles as $telegramFile) {
+                        if ($this->sendTelegramChatFile($tchat, $telegramFile, $this->getTelegramFileCaption($params['msg'], $chat, $telegramFile['file'], $fileIndex === 0 ? $messageText : ''), $chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) === false) {
+                            $failedEmbedCodes[] = $telegramFile['embed'];
+                        }
+                        $fileIndex++;
+                    }
 
-                $sendData = Longman\TelegramBot\Request::sendMessage($data);
-
-                if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && str_contains( $sendData->getDescription(), 'TOPIC_DELETED') === true) {
-                    // Reset telegram chat
-                    $tchat->tchat_id = 0;
-                    $tchat->updateThis(['update' => ['tchat_id']]);
-
-                    // Process request as a new chat just
-                    $this->chatStarted(['chat' => $chat]);
-                    return;
-                }
-
-                if (!$sendData->isOk()) {
-                    erLhcoreClassLog::write('sendMessagesss ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
-                        ezcLog::SUCCESS_AUDIT,
-                        array(
-                            'source' => 'lhc',
-                            'category' => 'telegram_exception',
-                            'line' => __LINE__,
-                            'file' => __FILE__,
-                            'object_id' => $chat->id
-                        )
-                    );
+                    if (!empty($failedEmbedCodes)) {
+                        Longman\TelegramBot\Request::sendMessage(array(
+                            'chat_id' => $tchat->bot->group_chat_id,
+                            'message_thread_id' => $tchat->tchat_id,
+                            'parse_mode' => 'HTML',
+                            'text' => erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                        ));
+                    }
                 }
             }
 
@@ -460,32 +642,54 @@ class erLhcoreClassExtensionLhctelegram
                 $tchat->updateThis(['update' => ['last_msg_id']]);
                 $db->commit();
 
-                if (empty($botMessage->msg)) {
-                    continue;
+                $telegramFiles = $this->getTelegramMessageFiles($botMessage);
+                $messageText = $this->stripTelegramFileEmbeds($botMessage->msg);
+
+                if ($messageText !== '' && empty($telegramFiles)) {
+                    $data = [
+                        'chat_id' => $tchat->bot->group_chat_id,
+                        'message_thread_id' => $tchat->tchat_id,
+                        'parse_mode' => 'HTML',
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                    ];
+                    if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                        $data['disable_notification'] = true;
+                    }
+                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                    if (!$sendData->isOk()) {
+                        erLhcoreClassLog::write('SendMessage BOT ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                            ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $chat->id
+                            )
+                        );
+                    }
                 }
 
-                $data = [
-                    'chat_id' => $tchat->bot->group_chat_id,
-                    'message_thread_id' => $tchat->tchat_id,
-                    'parse_mode' => 'HTML',
-                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
-                ];
-                if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
-                    $data['disable_notification'] = true;
-                }
-                $sendData = Longman\TelegramBot\Request::sendMessage($data);
+                if (!empty($telegramFiles)) {
+                    $failedEmbedCodes = array();
+                    $fileIndex = 0;
 
-                if (!$sendData->isOk()) {
-                    erLhcoreClassLog::write('SendMessage BOT ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
-                        ezcLog::SUCCESS_AUDIT,
-                        array(
-                            'source' => 'lhc',
-                            'category' => 'telegram_exception',
-                            'line' => __LINE__,
-                            'file' => __FILE__,
-                            'object_id' => $chat->id
-                        )
-                    );
+                    foreach ($telegramFiles as $telegramFile) {
+                        if ($this->sendTelegramChatFile($tchat, $telegramFile, $this->getTelegramFileCaption($botMessage, $chat, $telegramFile['file'], $fileIndex === 0 ? $messageText : ''), $chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) === false) {
+                            $failedEmbedCodes[] = $telegramFile['embed'];
+                        }
+                        $fileIndex++;
+                    }
+
+                    if (!empty($failedEmbedCodes)) {
+                        Longman\TelegramBot\Request::sendMessage(array(
+                            'chat_id' => $tchat->bot->group_chat_id,
+                            'message_thread_id' => $tchat->tchat_id,
+                            'parse_mode' => 'HTML',
+                            'text' => erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                        ));
+                    }
                 }
             }
         }
@@ -534,32 +738,54 @@ class erLhcoreClassExtensionLhctelegram
                 $tchat->last_msg_id = $botMessage->id;
                 $tchat->updateThis(['update' => ['last_msg_id']]);
 
-                if (empty($botMessage->msg)) {
-                    continue;
+                $telegramFiles = $this->getTelegramMessageFiles($botMessage);
+                $messageText = $this->stripTelegramFileEmbeds($botMessage->msg);
+
+                if ($messageText !== '' && empty($telegramFiles)) {
+                    $data = [
+                        'chat_id' => $tchat->bot->group_chat_id,
+                        'message_thread_id' => $tchat->tchat_id,
+                        'parse_mode' => 'HTML',
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                    ];
+                    if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
+                        $data['disable_notification'] = true;
+                    }
+                    $sendData = Longman\TelegramBot\Request::sendMessage($data);
+
+                    if (!$sendData->isOk()) {
+                        erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                            ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $chat->id
+                            )
+                        );
+                    }
                 }
 
-                $data = [
-                    'chat_id' => $tchat->bot->group_chat_id,
-                    'message_thread_id' => $tchat->tchat_id,
-                    'parse_mode' => 'HTML',
-                    'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
-                ];
-                if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
-                    $data['disable_notification'] = true;
-                }
-                $sendData = Longman\TelegramBot\Request::sendMessage($data);
+                if (!empty($telegramFiles)) {
+                    $failedEmbedCodes = array();
+                    $fileIndex = 0;
 
-                if (!$sendData->isOk()) {
-                    erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
-                        ezcLog::SUCCESS_AUDIT,
-                        array(
-                            'source' => 'lhc',
-                            'category' => 'telegram_exception',
-                            'line' => __LINE__,
-                            'file' => __FILE__,
-                            'object_id' => $chat->id
-                        )
-                    );
+                    foreach ($telegramFiles as $telegramFile) {
+                        if ($this->sendTelegramChatFile($tchat, $telegramFile, $this->getTelegramFileCaption($botMessage, $chat, $telegramFile['file'], $fileIndex === 0 ? $messageText : ''), $chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) === false) {
+                            $failedEmbedCodes[] = $telegramFile['embed'];
+                        }
+                        $fileIndex++;
+                    }
+
+                    if (!empty($failedEmbedCodes)) {
+                        Longman\TelegramBot\Request::sendMessage(array(
+                            'chat_id' => $tchat->bot->group_chat_id,
+                            'message_thread_id' => $tchat->tchat_id,
+                            'parse_mode' => 'HTML',
+                            'text' => erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                        ));
+                    }
                 }
             }
         }
@@ -651,13 +877,26 @@ class erLhcoreClassExtensionLhctelegram
                     $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') .  "\n├──Nick: " . $params['chat']->nick .(isset($params['chat']->referrer) && !empty($params['chat']->referrer) ? "\n├──Referrer: " . ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? "\n├──Page title: " . $params['chat']->online_user->page_title : '') . (isset($params['chat']->ip) && !empty($params['chat']->ip) ? "\n├──IP: " . $params['chat']->ip  : '') . (isset($params['chat']->country_name) && !empty($params['chat']->country_name) ? "\n├──GEO: " . $params['chat']->country_name : '') . $additionalDataFormatted . $previousChatMessages . "\n└──Messages:";
 
                     // Collect all chat messages including bot
+                    $initialTelegramFiles = array();
                     $botMessages = erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $params['chat']->id)));
                     foreach ($botMessages as $botMessage) {
                         $tChat->last_msg_id = $botMessage->id;
-                        if (empty($botMessage->msg)) {
+                        $telegramFiles = $this->getTelegramMessageFiles($botMessage);
+                        $messageText = $this->stripTelegramFileEmbeds($botMessage->msg);
+
+                        if ($messageText === '' && empty($telegramFiles)) {
                             continue;
                         }
-                        $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+
+                        if ($messageText !== '' && empty($telegramFiles)) {
+                            $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                        }
+
+                        $fileIndex = 0;
+                        foreach ($telegramFiles as $telegramFile) {
+                            $initialTelegramFiles[] = array('msg' => $botMessage, 'file' => $telegramFile, 'text' => $fileIndex === 0 ? $messageText : '');
+                            $fileIndex++;
+                        }
                     }
 
                     $data = [
@@ -704,6 +943,25 @@ class erLhcoreClassExtensionLhctelegram
                                     'object_id' => $tChat->chat_id
                                 )
                             );
+                        }
+                    }
+
+                    if (!empty($initialTelegramFiles)) {
+                        $failedEmbedCodes = array();
+
+                        foreach ($initialTelegramFiles as $initialTelegramFile) {
+                            if ($this->sendTelegramChatFile($tChat, $initialTelegramFile['file'], $this->getTelegramFileCaption($initialTelegramFile['msg'], $params['chat'], $initialTelegramFile['file']['file'], $initialTelegramFile['text']), $params['chat']->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) === false) {
+                                $failedEmbedCodes[] = $initialTelegramFile['file']['embed'];
+                            }
+                        }
+
+                        if (!empty($failedEmbedCodes)) {
+                            Longman\TelegramBot\Request::sendMessage(array(
+                                'chat_id' => $tChat->bot->group_chat_id,
+                                'message_thread_id' => $tChat->tchat_id,
+                                'parse_mode' => 'HTML',
+                                'text' => erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                            ));
                         }
                     }
 
@@ -875,5 +1133,3 @@ class erLhcoreClassExtensionLhctelegram
 
     private $configData = false;
 }
-
-
