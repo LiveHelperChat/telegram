@@ -190,6 +190,31 @@ class GenericmessageCommand extends SystemCommand
         return $fileEmbed;
     }
 
+    private function getAnimationExtension($message)
+    {
+        $extension = 'gif';
+        $animation = $message->getAnimation();
+
+        if (is_object($animation)) {
+            $fileName = method_exists($animation, 'getFileName') ? (string)$animation->getFileName() : '';
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if ($fileExtension !== '') {
+                return $fileExtension;
+            }
+
+            $mimeType = method_exists($animation, 'getMimeType') ? strtolower((string)$animation->getMimeType()) : '';
+
+            if ($mimeType === 'video/mp4') {
+                $extension = 'mp4';
+            } elseif ($mimeType === 'image/gif') {
+                $extension = 'gif';
+            }
+        }
+
+        return $extension;
+    }
+
     /**
      * Command execute method
      *
@@ -209,7 +234,7 @@ class GenericmessageCommand extends SystemCommand
 
         if ($type === 'message' || $type === 'text') {
             $text = trim($message->getText(true));
-        } elseif ($type === 'photo' || $type === 'video' || $type === 'voice' || $type === 'sticker' || $type === 'document' || $type === 'audio') {
+        } elseif ($type === 'photo' || $type === 'video' || $type === 'voice' || $type === 'sticker' || $type === 'document' || $type === 'audio' || $type === 'animation') {
             $text = '';
         } elseif ($type === 'location') {
             $text = 'https://www.google.com/maps/@'.$message->getLocation()->getLatitude().','.$message->getLocation()->getLongitude().',15z';
@@ -234,6 +259,8 @@ class GenericmessageCommand extends SystemCommand
 
                         if ($type === 'photo') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processPhoto($chat, $message, $tBot));
+                        } elseif ($type === 'animation') {
+                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getAnimation()->getFileId(), $chat, $tBot, array('ext' => $this->getAnimationExtension($message))));
                         } elseif ($type === 'document') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getDocument()->getFileId(), $chat, $tBot));
                         } elseif ($type === 'video') {
