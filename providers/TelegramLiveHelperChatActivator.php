@@ -78,12 +78,26 @@ class TelegramLiveHelperChatActivator {
         $botData['bot']->name = 'TelegramIntegration';
         $botData['bot']->updateThis(['update' => ['name']]);
 
+        foreach ($botData['triggers'] as $triggerItem) {
+            $actions = $triggerItem->actions_front;
+            $updatedActions = false;
+
+            foreach ($actions as & $action) {
+                if (isset($action['type']) && $action['type'] === 'restapi' && isset($action['content']['rest_api'])) {
+                    $action['content']['rest_api'] = $restAPI->id;
+                    $updatedActions = true;
+                }
+            }
+            unset($action);
+
+            if ($updatedActions === true) {
+                $triggerItem->actions_front = $actions;
+                $triggerItem->actions = json_encode($actions);
+                $triggerItem->updateThis(['update' => ['actions']]);
+            }
+        }
+
         $trigger = $botData['triggers'][0];
-        $actions = $trigger->actions_front;
-        $actions[0]['content']['rest_api'] = $restAPI->id;
-        $trigger->actions_front = $actions;
-        $trigger->actions = json_encode($actions);
-        $trigger->updateThis(['update' => ['actions']]);
 
         if ($botPrevious && $event = \erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => ['chat.desktop_client_admin_msg', 'bot_id' => $botPrevious->id]]])) {
             $event->removeThis();
