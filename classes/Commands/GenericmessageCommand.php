@@ -55,6 +55,35 @@ class GenericmessageCommand extends SystemCommand
         return Request::emptyResponse();
     }
 
+    private function sanitizeUploadName($uploadName)
+    {
+        $uploadName = str_replace(array(chr(0), '/', chr(92)), '', trim((string)$uploadName));
+        $uploadName = preg_replace('/[\x00-\x1F\x7F]+/u', '', $uploadName);
+
+        return $uploadName;
+    }
+
+    private function getTelegramUploadName($media)
+    {
+        $fileName = '';
+
+        if (is_object($media)) {
+            if (method_exists($media, 'getFileName')) {
+                $fileName = (string)$media->getFileName();
+            }
+
+            if ($fileName === '' && method_exists($media, 'getProperty')) {
+                $fileName = (string)$media->getProperty('file_name', '');
+            }
+
+            if ($fileName === '' && isset($media->raw_data) && is_array($media->raw_data) && isset($media->raw_data['file_name'])) {
+                $fileName = (string)$media->raw_data['file_name'];
+            }
+        }
+
+        return $this->sanitizeUploadName($fileName);
+    }
+
     private function processObject($fileId, $chat, $tBot, $params = array())
     {
         //Download the photo after send message response to speedup response
@@ -70,10 +99,15 @@ class GenericmessageCommand extends SystemCommand
                 \erLhcoreClassFileUpload::mkdirRecursive($path);
 
                 $filePath = $photo_file->getFilePath();
+                $uploadName = isset($params['upload_name']) ? $this->sanitizeUploadName($params['upload_name']) : '';
 
                 if (!isset($params['ext'])) {
-                    $parts = explode('.', $filePath);
-                    $ext = array_pop($parts);
+                    $ext = strtolower(pathinfo($uploadName !== '' ? $uploadName : $filePath, PATHINFO_EXTENSION));
+
+                    if ($ext === '') {
+                        $parts = explode('.', $filePath);
+                        $ext = array_pop($parts);
+                    }
                 } else {
                     $ext = $params['ext'];
                 }
@@ -94,8 +128,10 @@ class GenericmessageCommand extends SystemCommand
                     'xlsx'=> 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 );
 
-                $partsNames = explode('/',$filePath);
-                $uploadName = array_pop($partsNames);
+                if ($uploadName === '') {
+                    $partsNames = explode('/',$filePath);
+                    $uploadName = $this->sanitizeUploadName(array_pop($partsNames));
+                }
 
                 $fileUpload = new \erLhcoreClassModelChatFile();
                 $fileUpload->size = $photo_file->getFileSize();
@@ -260,11 +296,14 @@ class GenericmessageCommand extends SystemCommand
                         if ($type === 'photo') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processPhoto($chat, $message, $tBot));
                         } elseif ($type === 'animation') {
-                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getAnimation()->getFileId(), $chat, $tBot, array('ext' => $this->getAnimationExtension($message))));
+                            $animation = $message->getAnimation();
+                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($animation->getFileId(), $chat, $tBot, array('ext' => $this->getAnimationExtension($message), 'upload_name' => $this->getTelegramUploadName($animation))));
                         } elseif ($type === 'document') {
-                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getDocument()->getFileId(), $chat, $tBot));
+                            $document = $message->getDocument();
+                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($document->getFileId(), $chat, $tBot, array('upload_name' => $this->getTelegramUploadName($document))));
                         } elseif ($type === 'video') {
-                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getVideo()->getFileId(), $chat, $tBot, array('ext' => 'mp4')));
+                            $video = $message->getVideo();
+                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($video->getFileId(), $chat, $tBot, array('ext' => 'mp4', 'upload_name' => $this->getTelegramUploadName($video))));
                         } elseif ($message->getVideoNote()) {
                             $text = $this->processObject($message->getVideoNote()->getFileId(), $chat, $tBot, array('ext' => 'mp4'));
                         } elseif ($type === 'voice') {
@@ -272,7 +311,8 @@ class GenericmessageCommand extends SystemCommand
                         } elseif ($type === 'sticker') {
                             $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
                         } elseif ($type === 'audio') {
-                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getAudio()->getFileId(), $chat, $tBot));
+                            $audio = $message->getAudio();
+                            $text = $this->appendCaptionToFileEmbed($message, $this->processObject($audio->getFileId(), $chat, $tBot, array('upload_name' => $this->getTelegramUploadName($audio))));
                         }
 
                         $ignoreMessage = false;

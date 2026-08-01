@@ -468,23 +468,42 @@ class erLhcoreClassExtensionLhctelegram
             $field = 'video';
         }
 
+        $uploadName = str_replace(array(chr(0), '/', chr(92)), '', trim((string)$file->upload_name));
+
+        if ($uploadName === '') {
+            $uploadName = basename((string)$file->file_path_server);
+        }
+
+        if ($uploadName === '') {
+            $uploadName = 'upload';
+        }
+
+        if (pathinfo($uploadName, PATHINFO_EXTENSION) === '' && $extension !== '') {
+            $uploadName .= '.' . $extension;
+        }
+
+        $mimeType = $file->type != '' ? $file->type : 'application/octet-stream';
+
         $data = array(
-            'chat_id' => $tchat->bot->group_chat_id,
-            'message_thread_id' => $tchat->tchat_id,
-            'parse_mode' => 'HTML',
-            $field => Longman\TelegramBot\Request::encodeFile($file->file_path_server)
+            array('name' => 'chat_id', 'contents' => $tchat->bot->group_chat_id),
+            array('name' => 'message_thread_id', 'contents' => $tchat->tchat_id),
+            array('name' => 'parse_mode', 'contents' => 'HTML'),
+            array('name' => $field, 'contents' => fopen($file->file_path_server, 'r'), 'filename' => $uploadName, 'headers' => array('Content-Type' => $mimeType))
         );
 
         if ($caption !== '') {
-            $data['caption'] = $caption;
+            $data[] = array('name' => 'caption', 'contents' => $caption);
         }
 
         if ($disableNotification === true) {
-            $data['disable_notification'] = true;
+            $data[] = array('name' => 'disable_notification', 'contents' => 'true');
         }
 
         try {
-            $sendData = Longman\TelegramBot\Request::send($method, $data);
+            $client = new \GuzzleHttp\Client(array('base_uri' => 'https://api.telegram.org'));
+            $response = $client->post('/bot' . $tchat->bot->bot_api . '/' . $method, array('multipart' => $data));
+            $responseData = json_decode((string)$response->getBody(), true);
+            $sendData = new Longman\TelegramBot\Entities\ServerResponse(is_array($responseData) ? $responseData : array('ok' => false, 'description' => 'Invalid Telegram response'));
         } catch (Exception $e) {
             erLhcoreClassLog::write('SendFile exception '.$e->getMessage(),
                 ezcLog::SUCCESS_AUDIT,
