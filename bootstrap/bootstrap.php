@@ -472,7 +472,7 @@ class erLhcoreClassExtensionLhctelegram
             'chat_id' => $tchat->bot->group_chat_id,
             'message_thread_id' => $tchat->tchat_id,
             'parse_mode' => 'HTML',
-            $field => Longman\TelegramBot\Request::encodeFile($file->file_path_server)
+            $field => $this->getTelegramChatFileUrl($file)
         );
 
         if ($caption !== '') {
@@ -517,6 +517,20 @@ class erLhcoreClassExtensionLhctelegram
 
         return true;
     }
+
+    private function getTelegramChatFileUrl($file)
+    {
+        $URLHash = '';
+
+        if ($file->chat_id > 0) {
+            $tsHash = time();
+            $temporaryHash = sha1($file->id . '_' . $file->hash . '_' . $tsHash . '_' . erConfigClassLhConfig::getInstance()->getSetting('site', 'secrethash'));
+            $URLHash = "/(vhash)/{$temporaryHash}/(vts)/{$tsHash}";
+        }
+
+        return erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect('file/downloadfile') . "/{$file->id}/{$file->security_hash}{$URLHash}";
+    }
+
     public function messageAdded($params)
     {
         $chat = $params['chat'];
