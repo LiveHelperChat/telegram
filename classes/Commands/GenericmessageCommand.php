@@ -340,12 +340,58 @@ class GenericmessageCommand extends SystemCommand
                         }
 
                         if ($ignoreMessage == false) {
+                            $metaMsgArray = [];
+                            $replyToMessage = $message->getReplyToMessage();
+
+                            if (is_object($replyToMessage)) {
+                                $replyTopicMsgId = (int)$replyToMessage->getMessageId();
+                                if ($replyTopicMsgId > 0) {
+                                    $targetMsg = \erLhcoreClassModelmsg::findOne([
+                                        'filter' => ['chat_id' => $chat->id],
+                                        'customfilter' => ['`meta_msg` != \'\' AND JSON_EXTRACT(meta_msg, \'$.tg_topic_msg_id\') = ' . $replyTopicMsgId]
+                                    ]);
+
+                                    if ($targetMsg instanceof \erLhcoreClassModelmsg) {
+                                        $quoteText = '';
+                                        if (method_exists($message, 'getQuote') && $message->getQuote() && method_exists($message->getQuote(), 'getText')) {
+                                            $quoteText = trim((string)$message->getQuote()->getText());
+                                        }
+                                        if ($quoteText === '') {
+                                            $quoteText = trim((string)($replyToMessage->getText() ?: $replyToMessage->getCaption()));
+                                        }
+                                        if ($quoteText === '') {
+                                            $quoteText = trim((string)$targetMsg->msg);
+                                        }
+                                        if (mb_strlen($quoteText) > 200) {
+                                            $quoteText = mb_substr($quoteText, 0, 197) . '...';
+                                        }
+
+                                        // Prepend BBCode [quote=ID] so LHC core processReplyTo automatically detects and processes it
+                                        $text = '[quote=' . $targetMsg->id . ']' . $quoteText . '[/quote]' . $text;
+
+                                        $metaMsgArray['content']['quote'] = [
+                                            'id' => $targetMsg->id,
+                                            'text' => $quoteText,
+                                            'nick' => $targetMsg->name_support ?: $chat->nick
+                                        ];
+                                        $metaMsgArray['content']['reply_to'] = [
+                                            'db_msg_id' => $targetMsg->id,
+                                            'iwh_msg_id' => $targetMsg->meta_msg_array['iwh_msg_id'] ?? null
+                                        ];
+                                    }
+                                }
+                            }
+
+                            $metaMsgArray['tg_topic_msg_id'] = (int)$message->getMessageId();
+
                             $msg = new \erLhcoreClassModelmsg();
                             $msg->msg = $text;
                             $msg->chat_id = $chat->id;
                             $msg->user_id = $messageUserId;
                             $msg->time = time();
                             $msg->name_support = $operator->user->name_support;
+                            $msg->meta_msg_array = $metaMsgArray;
+                            $msg->meta_msg = json_encode($metaMsgArray);
 
                             \erLhcoreClassChat::getSession()->save($msg);
 
