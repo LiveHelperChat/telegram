@@ -487,7 +487,7 @@ class erLhcoreClassExtensionLhctelegram
             $iwhId = (string)$meta['content']['reply_to']['iwh_msg_id'];
             $targetMsg = erLhcoreClassModelmsg::findOne([
                 'filter' => ['chat_id' => $chatId],
-                'customfilter' => ['`meta_msg` != \'\' AND (JSON_EXTRACT(meta_msg,\'$.iwh_msg_id\') = ' . ezcDbInstance::get()->quote($iwhId) . ' OR JSON_EXTRACT(meta_msg,\'$.iwh_msg_id\') = ' . (is_numeric($iwhId) ? (int)$iwhId : ezcDbInstance::get()->quote($iwhId)) . ')']
+                'customfilter' => ['`meta_msg` != \'\' AND JSON_VALID(`meta_msg`) AND (JSON_UNQUOTE(JSON_EXTRACT(meta_msg,\'$.iwh_msg_id\')) = ' . ezcDbInstance::get()->quote($iwhId) . ' OR JSON_EXTRACT(meta_msg,\'$.iwh_msg_id\') = ' . (is_numeric($iwhId) ? (int)$iwhId : ezcDbInstance::get()->quote($iwhId)) . ')']
             ]);
             if ($targetMsg instanceof erLhcoreClassModelmsg && isset($targetMsg->meta_msg_array['tg_topic_msg_id']) && (int)$targetMsg->meta_msg_array['tg_topic_msg_id'] > 0) {
                 return (int)$targetMsg->meta_msg_array['tg_topic_msg_id'];
