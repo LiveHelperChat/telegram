@@ -468,12 +468,27 @@ class erLhcoreClassExtensionLhctelegram
             $field = 'video';
         }
 
+        $fileSize = is_file($file->file_path_server ?? '') ? filesize($file->file_path_server) : 0;
+
         $data = array(
             'chat_id' => $tchat->bot->group_chat_id,
             'message_thread_id' => $tchat->tchat_id,
-            'parse_mode' => 'HTML',
-            $field => $this->getTelegramChatFileUrl($file)
+            'parse_mode' => 'HTML'
         );
+
+        // Telegram Bot API supports multipart file uploads up to 50 MB (52428800 bytes).
+        // URL-based download limit on Telegram servers is restricted to 20 MB.
+        // Uploading directly from server disk allows files between 20MB and 50MB (e.g. videos/recordings) to be delivered natively.
+        if ($fileSize > 0 && $fileSize <= 52428800) {
+            $fileHandle = Longman\TelegramBot\Request::encodeFile($file->file_path_server);
+            if (is_resource($fileHandle)) {
+                $data[$field] = $fileHandle;
+            } else {
+                $data[$field] = $this->getTelegramChatFileUrl($file);
+            }
+        } else {
+            $data[$field] = $this->getTelegramChatFileUrl($file);
+        }
 
         if ($caption !== '') {
             $data['caption'] = $caption;
