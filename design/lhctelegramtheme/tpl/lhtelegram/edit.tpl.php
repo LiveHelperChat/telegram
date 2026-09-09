@@ -6,7 +6,6 @@
 
 <ul class="nav nav-pills">
     <li role="presentation" class="nav-item"><a class="active nav-link" href="#bot"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Bot');?></a></li>
-    <li role="presentation" class="nav-item"><a class="nav-link" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editsignature')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Signature');?></a></li>
     <li role="presentation" class="nav-item"><a class="nav-link" href="<?php echo erLhcoreClassDesign::baseurl('telegram/editdepartments')?>/<?php echo $item->id?>" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Departments');?></a></li>
 </ul>
 

@@ -21,10 +21,6 @@ class TelegramLiveHelperChatActivator {
                 $event->removeThis();
             }
 
-            if ($event = \erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => ['chat.workflow.canned_message_before_save', 'bot_id' => $botPrevious->id]]])) {
-                $event->removeThis();
-            }
-
             if ($event = \erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => ['chat.web_add_msg_admin', 'bot_id' => $botPrevious->id]]])) {
                 $event->removeThis();
             }
@@ -90,15 +86,6 @@ class TelegramLiveHelperChatActivator {
         }
         $event = new \erLhcoreClassModelChatWebhook();
         $event->setState(json_decode(file_get_contents('extension/lhctelegram/doc/telegram/chat.desktop_client_admin_msg.json'),true));
-        $event->bot_id = $botData['bot']->id;
-        $event->trigger_id = $trigger->id;
-        $event->saveThis();
-
-        if ($botPrevious && $event = \erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => ['chat.workflow.canned_message_before_save', 'bot_id' => $botPrevious->id]]])) {
-            $event->removeThis();
-        }
-        $event = new \erLhcoreClassModelChatWebhook();
-        $event->setState(json_decode(file_get_contents('extension/lhctelegram/doc/telegram/chat.workflow.canned_message_before_save.json'),true));
         $event->bot_id = $botData['bot']->id;
         $event->trigger_id = $trigger->id;
         $event->saveThis();

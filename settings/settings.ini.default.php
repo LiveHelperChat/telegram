@@ -1,6 +1,8 @@
 <?php
 
 return array(
+    'disable_op_flow' => false,
+    'disable_leads' => false,
     'convert_ogg' => false,
     'convert_to' => 'wav',
     'convert_command' => 'avconv -i {file_orig} {file_dest}',

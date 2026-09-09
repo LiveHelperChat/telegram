@@ -58,56 +58,6 @@ class erLhcoreClassTelegramValidator
         return $Errors;
     }
 
-    public static function validateSignature(erLhcoreClassModelTelegramSignature & $item)
-    {
-        $definition = array(
-            'signature' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
-            ),
-            'user_id' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
-            )
-        );
-
-        $form = new ezcInputForm(INPUT_POST, $definition);
-        $Errors = array();
-
-        if ($form->hasValidData('signature') && $form->signature != '') {
-            $item->signature = $_POST['signature'];
-        } else {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please enter signature!');
-        }
-
-        if ($form->hasValidData('user_id')) {
-            $item->user_id = $form->user_id;
-        } else {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please choose a user!');
-        }
-
-        return $Errors;
-    }
-
-    public static function validateSignatureGlobal(erLhcoreClassModelTelegramSignature & $item)
-    {
-        $definition = array(
-            'bot_id' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
-            )
-        );
-
-        $form = new ezcInputForm(INPUT_POST, $definition);
-
-        if ($form->hasValidData('bot_id')) {
-            $item->bot_id = $form->bot_id;
-        } else {
-            $item->bot_id = 0;
-        }
-
-        $Errors = self::validateSignature($item);
-
-        return $Errors;
-    }
-
     public static function validateDepartments(erLhcoreClassModelTelegramBot & $item)
     {
         $definition = array(

@@ -49,12 +49,6 @@
         <p class="text-danger">chat.web_add_msg_admin</p>
     <?php endif; ?>
 
-    <?php if ($bot && erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => 'chat.workflow.canned_message_before_save', 'bot_id' => $bot->id]])) : ?>
-        <p class="text-success">chat.workflow.canned_message_before_save</p>
-    <?php else : ?>
-        <p class="text-danger">chat.workflow.canned_message_before_save</p>
-    <?php endif; ?>
-
     <?php if ($bot && erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => 'chat.before_auto_responder_msg_saved', 'bot_id' => $bot->id]])) : ?>
         <p class="text-success">chat.before_auto_responder_msg_saved</p>
     <?php else : ?>
