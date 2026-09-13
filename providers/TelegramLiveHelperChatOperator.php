@@ -285,6 +285,11 @@ class TelegramLiveHelperChatOperator {
 
         foreach (\erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['chat']->online_user_id > 0 ? ($params['chat']->online_user_id * -1) : $params['chat']->id), 'type' => 1]]) as $tchat) {
 
+            if ((int)$tchat->chat_id !== (int)$params['chat']->id) {
+                $tchat->chat_id = (int)$params['chat']->id;
+                $tchat->updateThis(['update' => ['chat_id']]);
+            }
+
             $db->beginTransaction();
             $tchat->syncAndLock('`last_msg_id`');
             $db->commit();
@@ -329,7 +334,7 @@ class TelegramLiveHelperChatOperator {
 
                     $sendData = \Longman\TelegramBot\Request::sendMessage($data);
 
-                    if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && str_contains( $sendData->getDescription(), 'TOPIC_DELETED') === true) {
+                    if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && (str_contains($sendData->getDescription(), 'message thread not found') || str_contains($sendData->getDescription(), 'TOPIC_DELETED'))) {
                         // Reset telegram chat
                         $tchat->tchat_id = 0;
                         $tchat->updateThis(['update' => ['tchat_id']]);
