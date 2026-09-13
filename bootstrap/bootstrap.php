@@ -36,6 +36,12 @@ class erLhcoreClassExtensionLhctelegram
         // Operators handling chats from their telegram account
         $settings = $this->settings;
         if (!isset($settings['disable_op_flow']) || $settings['disable_op_flow'] !== true) {
+            if (!class_exists('\LiveHelperChatExtension\lhctelegram\providers\TelegramLiveHelperChatOperator')) {
+                $operatorFile = dirname(__DIR__) . '/providers/TelegramLiveHelperChatOperator.php';
+                if (file_exists($operatorFile)) {
+                    require_once $operatorFile;
+                }
+            }
             \LiveHelperChatExtension\lhctelegram\providers\TelegramLiveHelperChatOperator::registerListeners($dispatcher);
         }
     }
