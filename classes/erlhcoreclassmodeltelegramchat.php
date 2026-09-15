@@ -56,7 +56,7 @@ class erLhcoreClassModelTelegramChat
     
     public $bot_id = null;
 
-    public $tchat_id = null;
+    public $tchat_id = 0;
     
     public $chat_id = null;
     public $chat_id_internal = null;
