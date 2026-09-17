@@ -24,8 +24,9 @@ class TelegramLiveHelperChatOperator {
             return;
         }
 
-        // We want to by pass resque worker messages from rest_api
-        if (isset($params['source']) && $params['source'] == 'webhook' && (!isset($params['sub_source']) || $params['sub_source'] != 'rest_api_worker')) {
+        // Pass through rest_api worker messages, generic bot messages (user_id == -2), and operator messages (user_id > 0).
+        // Webhooks dispatch chat.web_add_msg_admin on chat creation for visitor messages (user_id == 0), which must be ignored here.
+        if (isset($params['source']) && $params['source'] == 'webhook' && (!isset($params['sub_source']) || $params['sub_source'] != 'rest_api_worker') && (!isset($params['msg']) || !is_object($params['msg']) || (int)$params['msg']->user_id === 0)) {
             return;
         }
 
@@ -34,7 +35,7 @@ class TelegramLiveHelperChatOperator {
 
     public static function messageAddedResponder($params)
     {
-        if (isset($params['source']) && $params['source'] == 'webhook') {
+        if (isset($params['source']) && $params['source'] == 'webhook' && (!isset($params['msg']) || !is_object($params['msg']) || (int)$params['msg']->user_id === 0)) {
             return;
         }
 
