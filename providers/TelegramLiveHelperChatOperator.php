@@ -727,6 +727,11 @@ class TelegramLiveHelperChatOperator {
                         }
                     }
 
+                    // tchat_id column does not accept NULL values. Topic might not be created e.g. Telegram did not return thread id
+                    if ($tChat->tchat_id === null) {
+                        $tChat->tchat_id = 0;
+                    }
+
                     $tChat->saveThis();
 
                     $db->commit();
