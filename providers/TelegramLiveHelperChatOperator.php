@@ -209,17 +209,22 @@ class TelegramLiveHelperChatOperator {
         );
 
         // Telegram Bot API supports multipart file uploads up to 50 MB (52428800 bytes).
-        // URL-based download limit on Telegram servers is restricted to 20 MB.
-        // Uploading directly from server disk allows files between 20MB and 50MB (e.g. videos/recordings) to be delivered natively.
+        // Files larger than 50 MB cannot be uploaded via standard Bot API, and URL downloads
+        // on Telegram servers are strictly restricted to 20 MB, failing with [400] Bad Request.
+        // Send oversized files directly as clickable download link messages.
+        if ($fileSize > 52428800) {
+            return self::sendTelegramChatFileAsLink($tchat, $file, $caption, $disableNotification);
+        }
+
         if ($fileSize > 0 && $fileSize <= 52428800) {
             $fileHandle = \Longman\TelegramBot\Request::encodeFile($file->file_path_server);
             if (is_resource($fileHandle)) {
                 $data[$field] = $fileHandle;
             } else {
-                $data[$field] = self::getTelegramChatFileUrl($file);
+                return self::sendTelegramChatFileAsLink($tchat, $file, $caption, $disableNotification);
             }
         } else {
-            $data[$field] = self::getTelegramChatFileUrl($file);
+            return self::sendTelegramChatFileAsLink($tchat, $file, $caption, $disableNotification);
         }
 
         if ($caption !== '') {
@@ -265,17 +270,138 @@ class TelegramLiveHelperChatOperator {
         return true;
     }
 
+    private static function formatTelegramFileSize($bytes)
+    {
+        $bytes = (float)$bytes;
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 1, '.', '') . ' GB';
+        }
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1, '.', '') . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1, '.', '') . ' KB';
+        }
+        return $bytes . ' B';
+    }
+
+    private static function sendTelegramChatFileAsLink($tchat, $file, $caption = '', $disableNotification = false)
+    {
+        $fileUrl = self::getTelegramChatFileUrl($file);
+        $fileName = !empty($file->upload_name) ? $file->upload_name : ($file->name . (!empty($file->extension) ? '.' . $file->extension : ''));
+        $safeFileName = htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
+        $fileSize = is_file($file->file_path_server ?? '') ? filesize($file->file_path_server) : ($file->size ?? 0);
+        $sizeText = $fileSize > 0 ? ' (' . self::formatTelegramFileSize($fileSize) . ')' : '';
+
+        $lines = array();
+        if ($caption !== '') {
+            $lines[] = $caption;
+        }
+        $lines[] = "<a href=\"{$fileUrl}\"><b>{$safeFileName}</b></a>{$sizeText}";
+
+        $data = array(
+            'chat_id' => $tchat->bot->group_chat_id,
+            'message_thread_id' => $tchat->tchat_id,
+            'parse_mode' => 'HTML',
+            'text' => implode("\n", $lines)
+        );
+
+        if ($disableNotification === true) {
+            $data['disable_notification'] = true;
+        }
+
+        try {
+            $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+        } catch (\Exception $e) {
+            \erLhcoreClassLog::write('SendFile exception ' . $e->getMessage(),
+                \ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'telegram_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $file->chat_id
+                )
+            );
+
+            return false;
+        }
+
+        if (!$sendData->isOk()) {
+            \erLhcoreClassLog::write('SendFile [' . $sendData->getErrorCode() . '] ' . $sendData->getDescription(),
+                \ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'telegram_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $file->chat_id
+                )
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function formatFailedTelegramFiles(array $failedEmbedCodes)
+    {
+        $links = array();
+        foreach ($failedEmbedCodes as $embedCode) {
+            if (preg_match('/\[file=(\d+)_([a-f0-9]+)\]/i', $embedCode, $matches)) {
+                $fileId = (int)$matches[1];
+                try {
+                    $file = \erLhcoreClassModelChatFile::fetch($fileId);
+                    if ($file instanceof \erLhcoreClassModelChatFile) {
+                        $url = self::getTelegramChatFileUrl($file);
+                        $name = htmlspecialchars(!empty($file->upload_name) ? $file->upload_name : ($file->name . (!empty($file->extension) ? '.' . $file->extension : '')), ENT_QUOTES, 'UTF-8');
+                        $fileSize = is_file($file->file_path_server ?? '') ? filesize($file->file_path_server) : ($file->size ?? 0);
+                        $sizeText = $fileSize > 0 ? ' (' . self::formatTelegramFileSize($fileSize) . ')' : '';
+                        $links[] = "<a href=\"{$url}\"><b>{$name}</b></a>{$sizeText}";
+                        continue;
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+            $links[] = \erLhcoreClassBBCodePlain::make_clickable($embedCode, array('sender' => 0));
+        }
+
+        return implode("\n", $links);
+    }
+
     private static function getTelegramChatFileUrl($file)
     {
         $URLHash = '';
 
         if ($file->chat_id > 0) {
             $tsHash = time();
-            $temporaryHash = sha1($file->id . '_' . $file->hash . '_' . $tsHash . '_' . \erConfigClassLhConfig::getInstance()->getSetting('site', 'secrethash'));
+            $fileHash = isset($file->hash) ? (string)$file->hash : '';
+            $secretHash = '';
+            try {
+                $secretHash = (string)\erConfigClassLhConfig::getInstance()->getSetting('site', 'secrethash');
+            } catch (\Throwable $e) {
+                $secretHash = '';
+            }
+            $temporaryHash = sha1($file->id . '_' . $fileHash . '_' . $tsHash . '_' . $secretHash);
             $URLHash = "/(vhash)/{$temporaryHash}/(vts)/{$tsHash}";
         }
 
-        return \erLhcoreClassSystem::getHost() . \erLhcoreClassDesign::baseurldirect('file/downloadfile') . "/{$file->id}/{$file->security_hash}{$URLHash}";
+        $host = '';
+        try {
+            $host = (string)\erLhcoreClassSystem::getHost();
+        } catch (\Throwable $e) {
+            $host = '';
+        }
+
+        $baseUri = '/index.php/file/downloadfile';
+        try {
+            $baseUri = (string)\erLhcoreClassDesign::baseurldirect('file/downloadfile');
+        } catch (\Throwable $e) {
+            $baseUri = '/index.php/file/downloadfile';
+        }
+
+        return $host . $baseUri . "/{$file->id}/{$file->security_hash}{$URLHash}";
     }
 
     public static function messageAdded($params)
@@ -369,7 +495,7 @@ class TelegramLiveHelperChatOperator {
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
-                            'text' => \erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                            'text' => self::formatFailedTelegramFiles($failedEmbedCodes)
                         ));
                     }
                 }
@@ -448,7 +574,7 @@ class TelegramLiveHelperChatOperator {
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
-                            'text' => \erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                            'text' => self::formatFailedTelegramFiles($failedEmbedCodes)
                         ));
                     }
                 }
@@ -544,7 +670,7 @@ class TelegramLiveHelperChatOperator {
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
-                            'text' => \erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                            'text' => self::formatFailedTelegramFiles($failedEmbedCodes)
                         ));
                     }
                 }
@@ -721,7 +847,7 @@ class TelegramLiveHelperChatOperator {
                                 'chat_id' => $tChat->bot->group_chat_id,
                                 'message_thread_id' => $tChat->tchat_id,
                                 'parse_mode' => 'HTML',
-                                'text' => \erLhcoreClassBBCodePlain::make_clickable(implode("\n", $failedEmbedCodes), array('sender' => 0))
+                                'text' => self::formatFailedTelegramFiles($failedEmbedCodes)
                             ));
                         }
                     }
