@@ -232,6 +232,30 @@ class GenericmessageCommand extends SystemCommand
         $chat_id = $message->getChat()->getId();
         $type = $message->getType();
 
+        $serviceTypes = [
+            'forum_topic_created',
+            'forum_topic_edited',
+            'forum_topic_closed',
+            'forum_topic_reopened',
+            'general_forum_topic_hidden',
+            'general_forum_topic_unhidden',
+            'pinned_message',
+            'new_chat_members',
+            'left_chat_member',
+            'new_chat_title',
+            'new_chat_photo',
+            'delete_chat_photo',
+            'group_chat_created',
+            'supergroup_chat_created',
+            'channel_chat_created',
+            'migrate_to_chat_id',
+            'migrate_from_chat_id',
+        ];
+
+        if (in_array($type, $serviceTypes, true)) {
+            return Request::emptyResponse();
+        }
+
         if ($type === 'message' || $type === 'text') {
             $text = trim($message->getText(true));
         } elseif ($type === 'photo' || $type === 'video' || $type === 'voice' || $type === 'sticker' || $type === 'document' || $type === 'audio' || $type === 'animation') {
