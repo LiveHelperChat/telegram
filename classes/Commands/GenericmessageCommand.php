@@ -132,6 +132,53 @@ class GenericmessageCommand extends SystemCommand
                     );
                 }
 
+                if (!empty($params['thumb_file_id'])) {
+                    try {
+                        $thumbResp = Request::getFile(['file_id' => $params['thumb_file_id']]);
+                        if ($thumbResp->isOk()) {
+                            $thumbPhoto = $thumbResp->getResult();
+                            $thumbRemotePath = (string)$thumbPhoto->getFilePath();
+                            $thumbExt = strtolower(pathinfo($thumbRemotePath, PATHINFO_EXTENSION) ?: 'webp');
+                            if (!in_array($thumbExt, ['jpg', 'jpeg', 'png', 'webp'])) {
+                                $thumbExt = 'webp';
+                            }
+                            $thumbMime = in_array($thumbExt, ['jpg', 'jpeg']) ? 'image/jpeg' : ($thumbExt === 'png' ? 'image/png' : 'image/webp');
+                            $thumbFileName = $fileUpload->name . '_thumb.' . $thumbExt;
+                            $thumbLocalPath = $path . $thumbFileName;
+                            if (!isset($client)) {
+                                $client = new Client(['base_uri' => 'https://api.telegram.org']);
+                            }
+                            $client->get(
+                                '/file/bot' . $tBot->bot_api . '/' . $thumbRemotePath,
+                                ['sink' => $thumbLocalPath]
+                            );
+                            if (is_file($thumbLocalPath) && filesize($thumbLocalPath) > 0) {
+                                $metaData = $fileUpload->meta_msg_array;
+                                $metaData['thumb'] = [
+                                    'path' => $thumbLocalPath,
+                                    'file_name' => $thumbFileName,
+                                    'ext' => $thumbExt,
+                                    'type' => $thumbMime,
+                                    'size' => filesize($thumbLocalPath),
+                                ];
+                                $fileUpload->meta_msg = json_encode($metaData);
+                                $fileUpload->saveThis();
+                            }
+                        }
+                    } catch (\Throwable $te) {
+                        \erLhcoreClassLog::write('Sticker thumbnail download error: ' . $te->getMessage(),
+                            \ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $chat->id
+                            )
+                        );
+                    }
+                }
+
                 \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('file.uploadfile.file_store', array('chat_file' => $fileUpload));
 
                 return '[file='.$fileUpload->id.'_'.$fileUpload->security_hash.']';
@@ -275,6 +322,7 @@ class GenericmessageCommand extends SystemCommand
                             $sticker = $message->getSticker();
                             $ext = 'webp';
                             $mime = 'image/webp';
+                            $thumbFileId = null;
                             if (is_object($sticker)) {
                                 if ($sticker->getIsVideo()) {
                                     $ext = 'webm';
@@ -283,8 +331,16 @@ class GenericmessageCommand extends SystemCommand
                                     $ext = 'tgs';
                                     $mime = 'application/gzip';
                                 }
+                                $thumbnail = $sticker->getThumbnail();
+                                if ($thumbnail instanceof \Longman\TelegramBot\Entities\PhotoSize) {
+                                    $thumbFileId = $thumbnail->getFileId();
+                                }
                             }
-                            $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => $ext, 'mime_type' => $mime));
+                            $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array(
+                                'ext' => $ext,
+                                'mime_type' => $mime,
+                                'thumb_file_id' => $thumbFileId,
+                            ));
                         } elseif ($type === 'audio') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getAudio()->getFileId(), $chat, $tBot));
                         }
