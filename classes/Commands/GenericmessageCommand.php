@@ -83,7 +83,9 @@ class GenericmessageCommand extends SystemCommand
                     'ogg' => 'audio/ogg',
                     'wav' => 'audio/wav',
                     'mp4' => 'video/mp4',
-                    'webm'=> 'audio/webm',
+                    'webm'=> 'video/webm',
+                    'tgs' => 'application/gzip',
+                    'webp'=> 'image/webp',
                     'gif' => 'image/gif',
                     'png' => 'image/png',
                     'jpg' => 'image/jpeg',
@@ -270,7 +272,19 @@ class GenericmessageCommand extends SystemCommand
                         } elseif ($type === 'voice') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processVoice($message->getVoice()->getFileId(), $chat, $tBot));
                         } elseif ($type === 'sticker') {
-                            $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => 'webp'));
+                            $sticker = $message->getSticker();
+                            $ext = 'webp';
+                            $mime = 'image/webp';
+                            if (is_object($sticker)) {
+                                if ($sticker->getIsVideo()) {
+                                    $ext = 'webm';
+                                    $mime = 'video/webm';
+                                } elseif ($sticker->getIsAnimated()) {
+                                    $ext = 'tgs';
+                                    $mime = 'application/gzip';
+                                }
+                            }
+                            $text = $this->processObject($message->getSticker()->getFileId(), $chat, $tBot, array('ext' => $ext, 'mime_type' => $mime));
                         } elseif ($type === 'audio') {
                             $text = $this->appendCaptionToFileEmbed($message, $this->processObject($message->getAudio()->getFileId(), $chat, $tBot));
                         }

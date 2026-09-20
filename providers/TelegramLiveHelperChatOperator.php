@@ -183,10 +183,34 @@ class TelegramLiveHelperChatOperator {
 
         $extension = strtolower((string)$file->extension);
         $type = strtolower((string)$file->type);
+        $fileSize = (int)($file->size ?? (is_file($file->file_path_server ?? '') ? filesize($file->file_path_server) : 0));
         $method = 'sendDocument';
         $field = 'document';
+        $isStickerCandidate = false;
 
-        if (in_array($extension, array('jpg', 'jpeg', 'png', 'webp')) || in_array($type, array('image/jpeg', 'image/png', 'image/webp'))) {
+        if ($extension === 'tgs') {
+            $method = 'sendSticker';
+            $field = 'sticker';
+            $isStickerCandidate = true;
+        } elseif ($extension === 'webm' || $type === 'video/webm') {
+            if ($fileSize <= 262144 && (preg_match('/^file_\d+\.webm$/i', (string)$file->upload_name) || !empty($caption))) {
+                $method = 'sendSticker';
+                $field = 'sticker';
+                $isStickerCandidate = true;
+            } else {
+                $method = 'sendVideo';
+                $field = 'video';
+            }
+        } elseif ($extension === 'webp' || $type === 'image/webp') {
+            if ($fileSize <= 524288 && preg_match('/^file_\d+\.webp$/i', (string)$file->upload_name)) {
+                $method = 'sendSticker';
+                $field = 'sticker';
+                $isStickerCandidate = true;
+            } else {
+                $method = 'sendPhoto';
+                $field = 'photo';
+            }
+        } elseif (in_array($extension, array('jpg', 'jpeg', 'png')) || in_array($type, array('image/jpeg', 'image/png'))) {
             $method = 'sendPhoto';
             $field = 'photo';
         } elseif ($extension === 'ogg' || $type === 'audio/ogg') {
@@ -227,7 +251,7 @@ class TelegramLiveHelperChatOperator {
             return self::sendTelegramChatFileAsLink($tchat, $file, $caption, $disableNotification);
         }
 
-        if ($caption !== '') {
+        if ($caption !== '' && $method !== 'sendSticker') {
             $data['caption'] = $caption;
         }
 
@@ -237,6 +261,22 @@ class TelegramLiveHelperChatOperator {
 
         try {
             $sendData = \Longman\TelegramBot\Request::send($method, $data);
+            if ($isStickerCandidate && !$sendData->isOk()) {
+                $fallbackMethod = ($extension === 'webm' ? 'sendVideo' : ($extension === 'webp' ? 'sendPhoto' : 'sendDocument'));
+                $fallbackField = ($fallbackMethod === 'sendVideo' ? 'video' : ($fallbackMethod === 'sendPhoto' ? 'photo' : 'document'));
+                if (isset($data['sticker']) && is_resource($data['sticker'])) {
+                    @fclose($data['sticker']);
+                }
+                unset($data['sticker']);
+                $fileHandle = \Longman\TelegramBot\Request::encodeFile($file->file_path_server);
+                if (is_resource($fileHandle)) {
+                    $data[$fallbackField] = $fileHandle;
+                    if ($caption !== '') {
+                        $data['caption'] = $caption;
+                    }
+                    $sendData = \Longman\TelegramBot\Request::send($fallbackMethod, $data);
+                }
+            }
         } catch (\Exception $e) {
             \erLhcoreClassLog::write('SendFile exception '.$e->getMessage(),
                 \ezcLog::SUCCESS_AUDIT,
