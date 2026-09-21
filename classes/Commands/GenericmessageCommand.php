@@ -408,6 +408,54 @@ class GenericmessageCommand extends SystemCommand
                                 $text = '[' . $operator->user->name_support . ']: ' . $rawMessage . ' ' . ($statusCommand['process_status'] != '' ? '|| ' . $statusCommand['process_status'] : '');
 
                                 $alwaysProcess = true;
+
+                                if ($operator->user->invisible_mode == 0 && ($chat->status == \erLhcoreClassModelChat::STATUS_PENDING_CHAT || $chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT)) {
+                                    $db = \ezcDbInstance::get();
+                                    $db->beginTransaction();
+
+                                    $chat->syncAndLock('status');
+
+                                    $chat->status = \erLhcoreClassModelChat::STATUS_ACTIVE_CHAT;
+                                    $chat->status_sub = \erLhcoreClassModelChat::STATUS_SUB_OWNER_CHANGED;
+                                    $chat->pnd_time = time() - 2;
+                                    $chat->wait_time = 1;
+                                    $chat->user_id = $operator->user_id;
+                                    $chat->usaccept = $operator->user->hide_online;
+                                    $chat->last_op_msg_time = time();
+                                    $chat->has_unread_op_messages = 1;
+                                    $chat->unread_op_messages_informed = 0;
+
+                                    if (isset($chat->chat_variables_array['bot_lock_msg'])) {
+                                        $chatVariables = $chat->chat_variables_array;
+                                        unset($chatVariables['bot_lock_msg']);
+                                        $chat->chat_variables_array = $chatVariables;
+                                        $chat->chat_variables = json_encode($chatVariables);
+                                    }
+
+                                    $chat->operation_admin = "lhinst.updateVoteStatus(" . $chat->id . ");";
+                                    $chat->saveThis();
+
+                                    $db->commit();
+
+                                    \erLhcoreClassGenericBotWorkflow::removePreviousEvents($chat->id);
+                                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.data_changed', array('chat' => & $chat, 'user_data' => $operator->user));
+                                    \erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.accept', array('chat' => & $chat, 'user_data' => $operator->user));
+                                    \erLhcoreClassChat::updateActiveChats($chat->user_id);
+
+                                    if ($chat->department !== false) {
+                                        \erLhcoreClassChat::updateDepartmentStats($chat->department);
+                                        $options = $chat->department->inform_options_array;
+                                        \erLhcoreClassChatWorkflow::chatAcceptedWorkflow(array('department' => $chat->department, 'options' => $options), $chat);
+                                    }
+
+                                    $data = [
+                                        'chat_id' => $chat_id,
+                                        'message_thread_id' => $message->getMessageThreadId(),
+                                        'parse_mode' => 'HTML',
+                                        'text'    => "<b>[System assistant]</b> <i>" . htmlspecialchars($operator->user->name_official) . "</i> " . \erTranslationClassLhTranslation::getInstance()->getTranslation('module/telegram','was assigned as a chat operator! Type /chat for more information.'),
+                                    ];
+                                    Request::sendMessage($data);
+                                }
                             }
 
                             if (isset($statusCommand['ignore']) && $statusCommand['ignore'] == true) {
