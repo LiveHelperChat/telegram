@@ -557,7 +557,7 @@ class TelegramLiveHelperChatOperator {
 
 
             // Send bot responses if any
-            $botMessages = \erLhcoreClassModelmsg::getList(array('filter' => array('user_id' => -2, 'chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
+            $botMessages = \erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['msg']->id)));
 
             foreach ($botMessages as $botMessage) {
 
@@ -666,6 +666,10 @@ class TelegramLiveHelperChatOperator {
             // Send bot responses if any
             $botMessages = \erLhcoreClassModelmsg::getList(array('filterin' => ['user_id' => [0, -2]], 'filter' => array('chat_id' => $chat->id), 'filtergt' => array('id' => $params['last_msg_id'])));
             foreach ($botMessages as $botMessage) {
+
+                if ($botMessage->id <= $tchat->last_msg_id) {
+                    continue;
+                }
 
                 $tchat->last_msg_id = $botMessage->id;
                 $tchat->updateThis(['update' => ['last_msg_id']]);
