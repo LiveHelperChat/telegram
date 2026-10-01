@@ -54,7 +54,7 @@ class TelegramLiveHelperChatOperator {
         }
 
         foreach (\erLhcoreClassModelTelegramChat::getList(['filter' => ['chat_id_internal' => ($params['ou']->id > 0 ? ($params['ou']->id * -1) : $params['ou']->chat_id), 'type' => 1]]) as $tchat) {
-            if ($tchat->bot->bot_client == 0 || $tchat->bot->notify_page_change == 0) {
+            if ($tchat->bot->bot_client == 0 || $tchat->bot->notify_page_change == 0 || $tchat->tchat_id == null || $tchat->tchat_id == 0) {
                 continue;
             }
 
@@ -481,6 +481,30 @@ class TelegramLiveHelperChatOperator {
                 }
                 // end here
 
+                if ($tchat->tchat_id == null || $tchat->tchat_id == 0) {
+                    $sendData = \Longman\TelegramBot\Request::send('createForumTopic', [
+                        'chat_id' => $tchat->bot->group_chat_id,
+                        'name' => mb_substr('[' . $chat->department . '] ' . $chat->nick . ' #' . $chat->id . ($chat->ip != '' ? ' | ' . $chat->ip : '') . ($chat->country_code != '' ? ' | ' . strtoupper($chat->country_code) : '') . ($chat->referrer != '' ? ' | ' . ltrim($chat->referrer, '/') : '') . (is_object($chat->online_user) && $chat->online_user->page_title != '' ? ' | ' . $chat->online_user->page_title : ''), 0, 128)
+                    ]);
+
+                    if ($sendData->isOk()) {
+                        $tchat->tchat_id = $sendData->getResult()->getMessageThreadId();
+                        $tchat->updateThis(['update' => ['tchat_id']]);
+                    } else {
+                        \erLhcoreClassLog::write('createForumTopic ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
+                            \ezcLog::SUCCESS_AUDIT,
+                            array(
+                                'source' => 'lhc',
+                                'category' => 'telegram_exception',
+                                'line' => __LINE__,
+                                'file' => __FILE__,
+                                'object_id' => $chat->id
+                            )
+                        );
+                        return;
+                    }
+                }
+
                 $telegramFiles = self::getTelegramMessageFiles($params['msg']);
                 $messageText = self::stripTelegramFileEmbeds($params['msg']->msg);
 
@@ -772,6 +796,7 @@ class TelegramLiveHelperChatOperator {
 
                         if ($sendData->isOk()) {
                             $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();
+                            $tChat->updateThis(['update' => ['tchat_id']]);
                         } else {
                             throw new \Exception('['.$sendData->getErrorCode().']'. $sendData->getDescription());
                         }
