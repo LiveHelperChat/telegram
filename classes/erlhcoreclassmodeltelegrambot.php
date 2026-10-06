@@ -21,8 +21,6 @@ class erLhcoreClassModelTelegramBot
             'bot_api' => $this->bot_api,
             'dep_id' => $this->dep_id,
             'bot_client' => $this->bot_client,
-            'chat_timeout' => $this->chat_timeout,
-            'bot_disabled' => $this->bot_disabled,
             'group_chat_id' => $this->group_chat_id,
             'delete_on_close' => $this->delete_on_close,
             'notify_page_change' => $this->notify_page_change
@@ -92,12 +90,9 @@ class erLhcoreClassModelTelegramBot
 
     public $webhook_set = 0;
 
-    public $bot_disabled = 0;
     public $group_chat_id = 0;
     public $delete_on_close = 0;
     public $notify_page_change = 0;
-
-    public $chat_timeout = 259200;
 }
 
 ?>

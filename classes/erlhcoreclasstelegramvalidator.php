@@ -11,12 +11,6 @@ class erLhcoreClassTelegramValidator
             'bot_api' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
-            'chat_timeout' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
-            ),
-            'bot_disabled' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
-            ),
             'dep_id' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
             )
@@ -37,22 +31,10 @@ class erLhcoreClassTelegramValidator
             $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please enter Account SID!');
         }
 
-        if ($form->hasValidData('bot_disabled') && $form->bot_disabled == true) {
-            $item->bot_disabled = 1;
-        } else {
-            $item->bot_disabled = 0;
-        }
-
         if ($form->hasValidData('dep_id')) {
             $item->dep_id = $form->dep_id;
         } else {
             $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please choose a department!');
-        }
-
-        if ($form->hasValidData('chat_timeout')) {
-            $item->chat_timeout = $form->chat_timeout;
-        } else {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('xmppservice/operatorvalidator', 'Please enter chat timeout!');
         }
 
         return $Errors;
