@@ -17,7 +17,11 @@ This extension allows for direct support of Telegram bots in Live Helper Chat. I
 1. By default, HTML markdown is used for messages.
 2. You can enable debug mode by unchecking the `Skip` option for the `TelegramIntegration` bot.
 3. If you don't want HTML or Markdown support, you can edit the Rest API call by removing `"parse_mode":"HTML",` and change `{{msg_html_nobr}}` to `{{msg_url}}`.
-4. In parse mode `"HTML"` not all tags are supported so don't use bbcode which translates to HTML which is not supported by telegram. You can always debug in Rest API enabling debug trigger. So you should have different bot or messages depending whom you are sending message. Telegram client or web widget.
+4. Inline button clicks are answered with `answerCallbackQuery`, so Telegram stops showing the loading spinner on the button. It's done by the `Answer callback query` trigger of the `TelegramIntegration` bot, executed by the `chat.webhook_incoming_chat_continue` and `chat.webhook_incoming_chat_started` webhooks.
+5. Incoming webhook `TelegramIntegration` has attributes which you can change in the back office (`Settings => Incoming webhooks`)
+   * `hide_buttons_on_click` - `true` (default) removes inline buttons from the message after the visitor clicks one of them. It prevents repeated clicks, the same as the website widget does. Set to `false` to keep the buttons.
+   * `disable_link_preview` - `true` sends messages without link previews. Default `false`.
+6. In parse mode `"HTML"` not all tags are supported so don't use bbcode which translates to HTML which is not supported by telegram. You can always debug in Rest API enabling debug trigger. So you should have different bot or messages depending whom you are sending message. Telegram client or web widget.
 
 ## Installation instructions
 

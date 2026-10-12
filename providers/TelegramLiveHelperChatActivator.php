@@ -28,7 +28,51 @@ class TelegramLiveHelperChatActivator {
             if ($event = \erLhcoreClassModelChatWebhook::findOne(['filter' => ['event' => ['chat.before_auto_responder_msg_saved', 'bot_id' => $botPrevious->id]]])) {
                 $event->removeThis();
             }
+
+            self::removeCallbackEvents($botPrevious->id);
         }
+    }
+
+    // Events which answer callback queries and optionally hide inline buttons after a click
+    private static $callbackEvents = ['chat.webhook_incoming_chat_continue', 'chat.webhook_incoming_chat_started'];
+
+    private static function removeCallbackEvents($botId)
+    {
+        foreach (self::$callbackEvents as $eventName) {
+            foreach (\erLhcoreClassModelChatWebhook::getList(['filter' => ['event' => $eventName, 'bot_id' => $botId]]) as $event) {
+                $event->removeThis();
+            }
+        }
+    }
+
+    /**
+     * Attributes like access_token or hide_buttons_on_click are edited by the administrator.
+     * Keep their values on update and only add attributes which are missing.
+     */
+    private static function keepAttributeValues($currentConfiguration, $templateConfiguration)
+    {
+        $current = json_decode((string)$currentConfiguration, true);
+        $template = json_decode((string)$templateConfiguration, true);
+
+        if (!is_array($current) || !is_array($template) || !isset($current['attr']) || !is_array($current['attr'])) {
+            return $templateConfiguration;
+        }
+
+        $currentValues = [];
+        foreach ($current['attr'] as $attr) {
+            if (isset($attr['key'])) {
+                $currentValues[$attr['key']] = $attr['value'];
+            }
+        }
+
+        foreach ($template['attr'] as & $attr) {
+            if (isset($attr['key']) && array_key_exists($attr['key'], $currentValues)) {
+                $attr['value'] = $currentValues[$attr['key']];
+            }
+        }
+        unset($attr);
+
+        return json_encode($template);
     }
 
     public static function installOrUpdate()
@@ -47,6 +91,7 @@ class TelegramLiveHelperChatActivator {
         } else {
             $dep_id = $incomingWebhook->dep_id;
             $identifier = $incomingWebhook->identifier;
+            $content['configuration'] = self::keepAttributeValues($incomingWebhook->configuration, $content['configuration']);
             $incomingWebhook->setState($content);
             $incomingWebhook->dep_id = $dep_id;
             $incomingWebhook->identifier = $identifier;
@@ -121,6 +166,29 @@ class TelegramLiveHelperChatActivator {
         $event->bot_id = $botData['bot']->id;
         $event->trigger_id = $trigger->id;
         $event->saveThis();
+
+        // Answer callback queries so Telegram stops the button spinner and hide buttons after a click
+        if ($botPrevious) {
+            self::removeCallbackEvents($botPrevious->id);
+        }
+
+        $callbackTrigger = null;
+        foreach ($botData['triggers'] as $triggerItem) {
+            if ($triggerItem->name == 'Answer callback query') {
+                $callbackTrigger = $triggerItem;
+                break;
+            }
+        }
+
+        if ($callbackTrigger !== null) {
+            foreach (self::$callbackEvents as $eventName) {
+                $event = new \erLhcoreClassModelChatWebhook();
+                $event->setState(json_decode(file_get_contents('extension/lhctelegram/doc/telegram/' . $eventName . '.json'),true));
+                $event->bot_id = $botData['bot']->id;
+                $event->trigger_id = $callbackTrigger->id;
+                $event->saveThis();
+            }
+        }
     }
 }
 
