@@ -33,6 +33,10 @@ class erLhcoreClassExtensionLhctelegram
             $this,'incommingChatStarted')
         );
 
+        $dispatcher->listen('chat.webhook_incoming', array(
+            $this,'answerCallbackQuery')
+        );
+
         // Operators handling chats from their telegram account
         $settings = $this->settings;
         if (!isset($settings['disable_op_flow']) || $settings['disable_op_flow'] !== true) {
@@ -98,6 +102,33 @@ class erLhcoreClassExtensionLhctelegram
     }
 
     
+    /*
+     * Telegram keeps showing a loading indicator on an inline button until the bot calls answerCallbackQuery.
+     * Answer as soon as the button click arrives, before bot triggers are processed.
+     */
+    public static function answerCallbackQuery($params)
+    {
+        if ($params['webhook']->scope != 'telegram' || !isset($params['data']['callback_query']['id']) || !isset($_GET['telegram_bot_id'])) {
+            return;
+        }
+
+        $telegramBot = erLhcoreClassModelTelegramBot::fetch((int)$_GET['telegram_bot_id']);
+        if (!is_object($telegramBot) || $telegramBot->bot_api == '') {
+            return;
+        }
+
+        $ch = curl_init('https://api.telegram.org/bot' . $telegramBot->bot_api . '/answerCallbackQuery');
+        curl_setopt_array($ch, array(
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => array('callback_query_id' => $params['data']['callback_query']['id']),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT => 3,
+        ));
+        curl_exec($ch);
+        curl_close($ch);
+    }
+
     /*
      * erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.incoming_dynamic_array', array('incoming_chat' => $this, 'dynamic_array' => & $chat_dynamic_array));
     */
