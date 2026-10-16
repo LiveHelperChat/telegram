@@ -780,6 +780,7 @@ class TelegramLiveHelperChatOperator {
                         $tChat->chat_id = $params['chat']->id;
                         $tChat->utime = time();
                         $tChat->ctime = time();
+                        $tChat->saveThis();
                     } else {
                         // Update to a new chat
                         $tChat->chat_id = $params['chat']->id;
