@@ -52,6 +52,9 @@ class erLhcoreClassTelegramValidator
             'notify_page_change' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'disable_link_preview' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
             'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
@@ -68,6 +71,12 @@ class erLhcoreClassTelegramValidator
             $item->notify_page_change = 1;
         } else {
             $item->notify_page_change = 0;
+        }
+
+        if ($form->hasValidData('disable_link_preview') && $form->disable_link_preview == true) {
+            $item->disable_link_preview = 1;
+        } else {
+            $item->disable_link_preview = 0;
         }
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {
