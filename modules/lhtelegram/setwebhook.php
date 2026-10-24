@@ -21,9 +21,10 @@ try {
     }
 
     // Set webhook
-    $result = $telegram->setWebhook($item->callback_url,['allowed_updates' => ['message','callback_query','message_reaction','edited_message','inline_query']]);
+    $result = $telegram->setWebhook($item->callback_url,['allowed_updates' => ['message','callback_query','message_reaction','edited_message','inline_query'], 'secret_token' => $item->webhook_secret]);
     if ($result->isOk()) {
-        $item->webhook_set = 1;
+        // 2 - webhook was set with a secret token, callback rejects requests without it
+        $item->webhook_set = 2;
         $item->saveThis();
         $tpl->set('msg', $result->getDescription());
         $tpl->set('updated', true);
