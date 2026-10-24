@@ -52,6 +52,9 @@ class erLhcoreClassTelegramValidator
             'notify_page_change' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'disable_link_preview' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'topic_commands' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
@@ -71,6 +74,12 @@ class erLhcoreClassTelegramValidator
             $item->notify_page_change = 1;
         } else {
             $item->notify_page_change = 0;
+        }
+
+        if ($form->hasValidData('disable_link_preview') && $form->disable_link_preview == true) {
+            $item->disable_link_preview = 1;
+        } else {
+            $item->disable_link_preview = 0;
         }
 
         // LHC bot commands shown in the "/" menu of the group, comma separated, in this order (see providers/TelegramTopicCommands.php)
@@ -107,6 +116,7 @@ class erLhcoreClassTelegramValidator
                 $botDep->saveThis();
             }
         }
+
 
         return [];
     }

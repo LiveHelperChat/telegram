@@ -10,6 +10,10 @@
     <label><input type="checkbox" name="notify_page_change" value="1" <?php if ($item->notify_page_change == 1) : ?>checked="checked"<?php endif; ?> > Change topic if a client navigates to another page</label>
 </div>
 
+<div>
+    <label><input type="checkbox" name="disable_link_preview" value="1" <?php if ($item->disable_link_preview == 1) : ?>checked="checked"<?php endif; ?> > Disable link previews in topic messages</label>
+</div>
+
 <div class="form-group">
     <label>Commands in the "/" menu of the group</label>
     <input name="topic_commands" class="form-control form-control-sm" type="text" placeholder="command1, command2" value="<?php echo htmlspecialchars((string)$item->topic_commands)?>" />
