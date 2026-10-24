@@ -38,6 +38,11 @@ class TelegramLiveHelperChatOperator {
             return;
         }
 
+        // Auto responder system notes (e.g. "auto responder was reset because of sync timeout") are not chat messages
+        if (isset($params['msg']) && (int)$params['msg']->user_id === -1) {
+            return;
+        }
+
         $params['no_afterwards_messages'] = true;
 
         self::messageAdded($params);
