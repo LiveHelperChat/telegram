@@ -13,6 +13,9 @@ class erLhcoreClassExtensionLhctelegram
     {
         $this->registerAutoload();
 
+        // Bot API calls: wait and repeat on "429 Too Many Requests", refused calls to the audit log
+        \LiveHelperChatExtension\lhctelegram\providers\TelegramApiClient::install();
+
         $dispatcher = erLhcoreClassChatEventDispatcher::getInstance();
 
         $dispatcher->listen('instance.extensions_structure', array(
