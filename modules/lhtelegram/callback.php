@@ -6,6 +6,17 @@
 
 $tBot = erLhcoreClassModelTelegramBot::fetch($Params['user_parameters']['id']);
 
+if (!($tBot instanceof erLhcoreClassModelTelegramBot)) {
+    http_response_code(404);
+    exit;
+}
+
+// Webhooks set before secret tokens were introduced (webhook_set = 1) keep working until the webhook is set again
+if ($tBot->webhook_set == 2 && !hash_equals($tBot->webhook_secret, (string)($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? ''))) {
+    http_response_code(403);
+    exit;
+}
+
 $telegramExt = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram');
 $telegramExt->setBot($tBot);
 
