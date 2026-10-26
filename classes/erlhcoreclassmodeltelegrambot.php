@@ -23,7 +23,8 @@ class erLhcoreClassModelTelegramBot
             'bot_client' => $this->bot_client,
             'group_chat_id' => $this->group_chat_id,
             'delete_on_close' => $this->delete_on_close,
-            'notify_page_change' => $this->notify_page_change
+            'notify_page_change' => $this->notify_page_change,
+            'disable_link_preview' => $this->disable_link_preview
         );
     }  
 
@@ -47,6 +48,11 @@ class erLhcoreClassModelTelegramBot
                     }
                 }
                 return $this->callback_url;
+
+            // Sent by Telegram in the X-Telegram-Bot-Api-Secret-Token header of every webhook request
+            case 'webhook_secret':
+                $this->webhook_secret = hash_hmac('sha256', 'telegram_webhook_' . $this->id . '_' . $this->bot_api, (string)erConfigClassLhConfig::getInstance()->getSetting('site', 'secrethash'));
+                return $this->webhook_secret;
 
             default:
                 ;
@@ -93,6 +99,7 @@ class erLhcoreClassModelTelegramBot
     public $group_chat_id = 0;
     public $delete_on_close = 0;
     public $notify_page_change = 0;
+    public $disable_link_preview = 0;
 }
 
 ?>

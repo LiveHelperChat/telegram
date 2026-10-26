@@ -31,7 +31,7 @@
                             <?php endforeach; ?>
                     </select>
                     <span class="input-group-text">
-                        <?php if ($item->webhook_set == 1) : ?>Yes<?php else : ?>No<?php endif;?>&nbsp; <button title="<?php echo $item->callback_url?>" class="btn btn-xs btn-info">Set webhook</button>
+                        <?php if ($item->webhook_set == 2) : ?>Yes<?php elseif ($item->webhook_set == 1) : ?>Yes (no secret token, set again)<?php else : ?>No<?php endif;?>&nbsp; <button title="<?php echo $item->callback_url?>" class="btn btn-xs btn-info">Set webhook</button>
                     </span>
                 </div>
                 <span class="fs11 text-muted">Language, after choosing a language click `Set webhook`. After setting webhook this option will remain the same, but webhook URL will be set to a chosen language.</span>
