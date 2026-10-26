@@ -298,7 +298,7 @@ class TelegramMailTopics
         $content = nl2br(htmlspecialchars($text, ENT_QUOTES));
         $mailbox = $conversation->mailbox;
         if (is_object($mailbox) && trim((string)$mailbox->signature) !== '') {
-            $content .= '<br /><br />' . $mailbox->signature;
+            $content .= '<br /><br /><div class="gmail_signature">' . self::signature($mailbox, $conversation, $operator) . '</div>';
         }
 
         $response = array();
@@ -329,6 +329,24 @@ class TelegramMailTopics
         \erLhcoreClassMailconvWorkflow::logInteraction('[Telegram] ' . \erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv', 'Operator replied from Telegram topic'), is_object($operator->user) ? (string)$operator->user->name_support : '', $conversation->id);
 
         return self::answer($message, '✅ ✉️ <code>' . self::html($customer['email']) . '</code>');
+    }
+
+    // Mailbox signature with the same placeholders the back office reply form fills in (mailconv/getreplydata)
+    public static function signature($mailbox, $conversation, $operator)
+    {
+        $user = is_object($operator->user) ? $operator->user : null;
+
+        $signature = str_replace(array(
+            '{operator}',
+            '{department}',
+            '{operator_chat_name}'
+        ), array(
+            $user !== null ? (string)$user->name_official : '',
+            (string)$conversation->department_name,
+            $user !== null ? (string)$user->name_support : ''
+        ), (string)$mailbox->signature);
+
+        return \erLhcoreClassGenericBotWorkflow::translateMessage($signature, array('chat' => $conversation));
     }
 
     public static function answer($message, $text)
