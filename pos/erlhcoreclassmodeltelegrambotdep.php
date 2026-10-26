@@ -24,6 +24,11 @@ $def->properties['topic_icon']->columnName   = 'topic_icon';
 $def->properties['topic_icon']->propertyName = 'topic_icon';
 $def->properties['topic_icon']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_STRING;
 
+$def->properties['topic_label'] = new ezcPersistentObjectProperty();
+$def->properties['topic_label']->columnName   = 'topic_label';
+$def->properties['topic_label']->propertyName = 'topic_label';
+$def->properties['topic_label']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_STRING;
+
 return $def;
 
 ?>

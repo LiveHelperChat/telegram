@@ -10,6 +10,9 @@ namespace LiveHelperChatExtension\lhctelegram\providers;
  * default icon in one of the six colours createForumTopic allows. Empty — the default icon.
  * Mobile clients otherwise draw the first letter of the topic name, which is "[" for every chat topic.
  *
+ * The same row has topic_label: when set, topic names start with "<label> · " instead of "[Department] " —
+ * a coloured icon shows the first letter of the topic name, so "TG" gives a blue "T" instead of "[".
+ *
  * The icon set is cached per bot for a day in cache/telegram_topic_icons_<bot id>.json.
  */
 class TelegramTopicIcons
@@ -26,16 +29,39 @@ class TelegramTopicIcons
         16478047 => 'Red',
     );
 
-    // Adds icon_custom_emoji_id or icon_color to createForumTopic data from the department setting
-    public static function addIcon($bot, $department, array $data)
+    private static $botDeps = array();
+
+    // Bot department row (cached for the request)
+    public static function getBotDep($bot, $department)
     {
         $depId = is_object($department) ? (int)$department->id : (int)$department;
         if (!is_object($bot) || $depId <= 0) {
-            return $data;
+            return null;
         }
 
-        $botDep = \erLhcoreClassModelTelegramBotDep::findOne(array('filter' => array('bot_id' => $bot->id, 'dep_id' => $depId)));
-        if (!($botDep instanceof \erLhcoreClassModelTelegramBotDep)) {
+        $key = (int)$bot->id . '_' . $depId;
+        if (!array_key_exists($key, self::$botDeps)) {
+            $botDep = \erLhcoreClassModelTelegramBotDep::findOne(array('filter' => array('bot_id' => $bot->id, 'dep_id' => $depId)));
+            self::$botDeps[$key] = $botDep instanceof \erLhcoreClassModelTelegramBotDep ? $botDep : null;
+        }
+
+        return self::$botDeps[$key];
+    }
+
+    // Start of a topic name: "<label> ·" from the department setting, else "[Department]"
+    public static function topicPrefix($bot, $department)
+    {
+        $botDep = self::getBotDep($bot, $department);
+        $label = $botDep !== null ? trim((string)$botDep->topic_label) : '';
+
+        return $label !== '' ? $label . ' ·' : '[' . (string)$department . ']';
+    }
+
+    // Adds icon_custom_emoji_id or icon_color to createForumTopic data from the department setting
+    public static function addIcon($bot, $department, array $data)
+    {
+        $botDep = self::getBotDep($bot, $department);
+        if ($botDep === null) {
             return $data;
         }
 

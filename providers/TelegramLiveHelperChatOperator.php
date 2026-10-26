@@ -68,7 +68,7 @@ class TelegramLiveHelperChatOperator {
             $sendData = \Longman\TelegramBot\Request::send('editForumTopic', [
                 'chat_id' => $tchat->bot->group_chat_id,
                 'message_thread_id' => $tchat->tchat_id,
-                'name' => mb_substr('[' . $chat->department . '] ' . $chat->nick . ' #' . $chat->id . ($params['ou']->ip != '' ? ' | ' . $params['ou']->ip : '') . ($params['ou']->user_country_code != '' ? ' | ' . strtoupper($params['ou']->user_country_code) : '') . ($params['ou']->current_page != '' ? ' | '. ltrim($params['ou']->current_page,'/') : '') . ($params['ou']->page_title != '' ? ' | '.$params['ou']->page_title : ''),0,128)
+                'name' => mb_substr(TelegramTopicIcons::topicPrefix($tchat->bot, $chat->department) . ' ' . $chat->nick . ' #' . $chat->id . ($params['ou']->ip != '' ? ' | ' . $params['ou']->ip : '') . ($params['ou']->user_country_code != '' ? ' | ' . strtoupper($params['ou']->user_country_code) : '') . ($params['ou']->current_page != '' ? ' | '. ltrim($params['ou']->current_page,'/') : '') . ($params['ou']->page_title != '' ? ' | '.$params['ou']->page_title : ''),0,128)
             ]);
 
             if (!$sendData->isOk()) {
@@ -484,7 +484,7 @@ class TelegramLiveHelperChatOperator {
                 if ($tchat->tchat_id == null || $tchat->tchat_id == 0) {
                     $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($tchat->bot, $chat->department, [
                         'chat_id' => $tchat->bot->group_chat_id,
-                        'name' => mb_substr('[' . $chat->department . '] ' . $chat->nick . ' #' . $chat->id . ($chat->ip != '' ? ' | ' . $chat->ip : '') . ($chat->country_code != '' ? ' | ' . strtoupper($chat->country_code) : '') . ($chat->referrer != '' ? ' | ' . ltrim($chat->referrer, '/') : '') . (is_object($chat->online_user) && $chat->online_user->page_title != '' ? ' | ' . $chat->online_user->page_title : ''), 0, 128)
+                        'name' => mb_substr(TelegramTopicIcons::topicPrefix($tchat->bot, $chat->department) . ' ' . $chat->nick . ' #' . $chat->id . ($chat->ip != '' ? ' | ' . $chat->ip : '') . ($chat->country_code != '' ? ' | ' . strtoupper($chat->country_code) : '') . ($chat->referrer != '' ? ' | ' . ltrim($chat->referrer, '/') : '') . (is_object($chat->online_user) && $chat->online_user->page_title != '' ? ' | ' . $chat->online_user->page_title : ''), 0, 128)
                     ]));
 
                     if ($sendData->isOk()) {
@@ -792,7 +792,7 @@ class TelegramLiveHelperChatOperator {
                     if ($tChat->tchat_id == null || $tChat->tchat_id == 0) {
                         $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($bot->bot, $params['chat']->department, [
                             'chat_id' => $bot->bot->group_chat_id,
-                            'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
+                            'name' => mb_substr(TelegramTopicIcons::topicPrefix($bot->bot, $params['chat']->department) . ' ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
                         ]));
 
                         if ($sendData->isOk()) {
@@ -881,7 +881,7 @@ class TelegramLiveHelperChatOperator {
 
                             $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($bot->bot, $params['chat']->department, [
                                 'chat_id' => $bot->bot->group_chat_id,
-                                'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
+                                'name' => mb_substr(TelegramTopicIcons::topicPrefix($bot->bot, $params['chat']->department) . ' ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
                             ]));
 
                             if ($sendData->isOk()) {

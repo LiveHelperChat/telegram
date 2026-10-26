@@ -18,7 +18,8 @@ class erLhcoreClassModelTelegramBotDep
             'id' => $this->id,
             'bot_id' => $this->bot_id,
             'dep_id' => $this->dep_id,
-            'topic_icon' => $this->topic_icon
+            'topic_icon' => $this->topic_icon,
+            'topic_label' => $this->topic_label
         );
     }
 
@@ -45,6 +46,9 @@ class erLhcoreClassModelTelegramBotDep
 
     // Forum topic icon of the department: custom emoji id or "color:<value>" (providers/TelegramTopicIcons.php)
     public $topic_icon = '';
+
+    // Start of the topic name instead of "[Department]", e.g. "TG" → "TG · Nick #12 …" (the letter of a coloured icon)
+    public $topic_label = '';
 }
 
 ?>
