@@ -112,10 +112,17 @@ class TelegramMailTopics
     {
         $customer = self::getCustomer($mail);
 
-        $sendData = \Longman\TelegramBot\Request::send('createForumTopic', array(
+        $data = array(
             'chat_id' => $bot->group_chat_id,
-            'name' => mb_substr('✉️ [' . (string)$conversation->department . '] ' . ($customer['name'] !== '' ? $customer['name'] : $customer['email']) . ' #' . $conversation->id . ' | ' . (string)$mail->subject, 0, 128)
-        ));
+            'name' => mb_substr('[' . (string)$conversation->department . '] ' . ($customer['name'] !== '' ? $customer['name'] : $customer['email']) . ' #' . $conversation->id . ' | ' . (string)$mail->subject, 0, 128)
+        );
+
+        // Topic icon from the department name, if the bot supports it (providers/TelegramTopicIcons.php)
+        if (class_exists(TelegramTopicIcons::class)) {
+            $data = TelegramTopicIcons::addIcon($bot, $conversation->department, $data);
+        }
+
+        $sendData = \Longman\TelegramBot\Request::send('createForumTopic', $data);
 
         if (!$sendData->isOk()) {
             self::log('Mail topic createForumTopic [' . $sendData->getErrorCode() . '] ' . $sendData->getDescription(), $conversation->id);
