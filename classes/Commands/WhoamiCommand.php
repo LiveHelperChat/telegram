@@ -69,7 +69,7 @@ class WhoamiCommand extends UserCommand
 
         $data = [
             'chat_id'             => $chat_id,
-            'reply_to_message_id' => $message_id,
+            'reply_parameters'    => ['message_id' => $message_id],
         ];
 
         //Send chat action
