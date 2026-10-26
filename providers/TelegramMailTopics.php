@@ -114,7 +114,7 @@ class TelegramMailTopics
 
         $data = array(
             'chat_id' => $bot->group_chat_id,
-            'name' => mb_substr('[' . (string)$conversation->department . '] ' . ($customer['name'] !== '' ? $customer['name'] : $customer['email']) . ' #' . $conversation->id . ' | ' . (string)$mail->subject, 0, 128)
+            'name' => mb_substr((class_exists(TelegramTopicIcons::class) && method_exists(TelegramTopicIcons::class, 'topicPrefix') ? TelegramTopicIcons::topicPrefix($bot, $conversation->department) : '[' . (string)$conversation->department . ']') . ' ' . ($customer['name'] !== '' ? $customer['name'] : $customer['email']) . ' #' . $conversation->id . ' | ' . (string)$mail->subject, 0, 128)
         );
 
         // Topic icon from the department name, if the bot supports it (providers/TelegramTopicIcons.php)
