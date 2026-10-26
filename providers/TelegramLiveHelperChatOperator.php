@@ -98,6 +98,26 @@ class TelegramLiveHelperChatOperator {
         }
     }
 
+    // Bot option "Disable link previews in topic messages": text sent to the operators group goes without the link preview
+    public static function applyLinkPreviewOption(array $data)
+    {
+        if (!isset($data['chat_id']) || isset($data['link_preview_options']) || isset($data['disable_web_page_preview'])) {
+            return $data;
+        }
+
+        // Not cached: background workers live long and the option can be switched any time
+        if (\erLhcoreClassModelTelegramBot::getCount(array('filter' => array('group_chat_id' => (string)$data['chat_id'], 'disable_link_preview' => 1))) > 0) {
+            $data['link_preview_options'] = array('is_disabled' => true);
+        }
+
+        return $data;
+    }
+
+    private static function sendMessage(array $data)
+    {
+        return \Longman\TelegramBot\Request::sendMessage(self::applyLinkPreviewOption($data));
+    }
+
     private static function stripTelegramFileEmbeds($text)
     {
         return trim(preg_replace('/\[file=\d+_[a-f0-9]{32}\]/i', '', (string)$text));
@@ -363,7 +383,7 @@ class TelegramLiveHelperChatOperator {
         }
 
         try {
-            $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+            $sendData = self::sendMessage($data);
         } catch (\Exception $e) {
             \erLhcoreClassLog::write('SendFile exception ' . $e->getMessage(),
                 \ezcLog::SUCCESS_AUDIT,
@@ -534,7 +554,7 @@ class TelegramLiveHelperChatOperator {
                         $data['disable_notification'] = true;
                     }
 
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && (str_contains($sendData->getDescription(), 'message thread not found') || str_contains($sendData->getDescription(), 'TOPIC_DELETED'))) {
                         // Reset telegram chat
@@ -572,7 +592,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -623,7 +643,7 @@ class TelegramLiveHelperChatOperator {
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
                     }
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
                         \erLhcoreClassLog::write('SendMessage BOT ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -651,7 +671,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -723,7 +743,7 @@ class TelegramLiveHelperChatOperator {
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
                     }
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
                         \erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -751,7 +771,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -884,7 +904,7 @@ class TelegramLiveHelperChatOperator {
                         $data['disable_notification'] = true;
                     }
 
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
 
@@ -904,7 +924,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         $data['message_thread_id'] = $tChat->tchat_id;
-                        $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                        $sendData = self::sendMessage($data);
 
                         if (!$sendData->isOk()) {
                             \erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -930,7 +950,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         if (!empty($failedEmbedCodes)) {
-                            \Longman\TelegramBot\Request::sendMessage(array(
+                            self::sendMessage(array(
                                 'chat_id' => $tChat->bot->group_chat_id,
                                 'message_thread_id' => $tChat->tchat_id,
                                 'parse_mode' => 'HTML',
