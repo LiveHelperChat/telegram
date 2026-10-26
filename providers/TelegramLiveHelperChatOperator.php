@@ -482,10 +482,10 @@ class TelegramLiveHelperChatOperator {
                 // end here
 
                 if ($tchat->tchat_id == null || $tchat->tchat_id == 0) {
-                    $sendData = \Longman\TelegramBot\Request::send('createForumTopic', [
+                    $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($tchat->bot, $chat->department, [
                         'chat_id' => $tchat->bot->group_chat_id,
                         'name' => mb_substr('[' . $chat->department . '] ' . $chat->nick . ' #' . $chat->id . ($chat->ip != '' ? ' | ' . $chat->ip : '') . ($chat->country_code != '' ? ' | ' . strtoupper($chat->country_code) : '') . ($chat->referrer != '' ? ' | ' . ltrim($chat->referrer, '/') : '') . (is_object($chat->online_user) && $chat->online_user->page_title != '' ? ' | ' . $chat->online_user->page_title : ''), 0, 128)
-                    ]);
+                    ]));
 
                     if ($sendData->isOk()) {
                         $tchat->tchat_id = $sendData->getResult()->getMessageThreadId();
@@ -790,10 +790,10 @@ class TelegramLiveHelperChatOperator {
                     $telegram = new \Longman\TelegramBot\Telegram($bot->bot->bot_api, $bot->bot->bot_username);
 
                     if ($tChat->tchat_id == null || $tChat->tchat_id == 0) {
-                        $sendData = \Longman\TelegramBot\Request::send('createForumTopic', [
+                        $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($bot->bot, $params['chat']->department, [
                             'chat_id' => $bot->bot->group_chat_id,
                             'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
-                        ]);
+                        ]));
 
                         if ($sendData->isOk()) {
                             $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();
@@ -879,10 +879,10 @@ class TelegramLiveHelperChatOperator {
                         // Try first time to create a topic if old one is gone
                         if ($sendData->getErrorCode() == 400 && (str_contains($sendData->getDescription(), 'message thread not found') || str_contains($sendData->getDescription(), 'TOPIC_DELETED'))) {
 
-                            $sendData = \Longman\TelegramBot\Request::send('createForumTopic', [
+                            $sendData = \Longman\TelegramBot\Request::send('createForumTopic', TelegramTopicIcons::addIcon($bot->bot, $params['chat']->department, [
                                 'chat_id' => $bot->bot->group_chat_id,
                                 'name' => mb_substr('[' . $params['chat']->department . '] ' . $params['chat']->nick . ' #' . $params['chat']->id. ($params['chat']->ip != '' ? ' | ' . $params['chat']->ip : '') . ($params['chat']->country_code != '' ? ' | ' . strtoupper($params['chat']->country_code) : '') . ($params['chat']->referrer != '' ? ' | '. ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? ' | '.$params['chat']->online_user->page_title : ''),0,128)
-                            ]);
+                            ]));
 
                             if ($sendData->isOk()) {
                                 $tChat->tchat_id = $sendData->getResult()->getMessageThreadId();

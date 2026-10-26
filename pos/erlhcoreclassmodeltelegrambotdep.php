@@ -19,6 +19,11 @@ $def->properties['dep_id']->columnName   = 'dep_id';
 $def->properties['dep_id']->propertyName = 'dep_id';
 $def->properties['dep_id']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_INT;
 
+$def->properties['topic_icon'] = new ezcPersistentObjectProperty();
+$def->properties['topic_icon']->columnName   = 'topic_icon';
+$def->properties['topic_icon']->propertyName = 'topic_icon';
+$def->properties['topic_icon']->propertyType = ezcPersistentObjectProperty::PHP_TYPE_STRING;
+
 return $def;
 
 ?>

@@ -17,7 +17,8 @@ class erLhcoreClassModelTelegramBotDep
         return array(
             'id' => $this->id,
             'bot_id' => $this->bot_id,
-            'dep_id' => $this->dep_id
+            'dep_id' => $this->dep_id,
+            'topic_icon' => $this->topic_icon
         );
     }
 
@@ -41,6 +42,9 @@ class erLhcoreClassModelTelegramBotDep
     public $bot_id = null;
 
     public $dep_id = null;
+
+    // Forum topic icon of the department: custom emoji id or "color:<value>" (providers/TelegramTopicIcons.php)
+    public $topic_icon = '';
 }
 
 ?>
