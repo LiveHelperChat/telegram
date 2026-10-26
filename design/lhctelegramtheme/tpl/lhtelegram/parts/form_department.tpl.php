@@ -10,6 +10,10 @@
     <label><input type="checkbox" name="notify_page_change" value="1" <?php if ($item->notify_page_change == 1) : ?>checked="checked"<?php endif; ?> > Change topic if a client navigates to another page</label>
 </div>
 
+<div>
+    <label><input type="checkbox" name="disable_link_preview" value="1" <?php if ($item->disable_link_preview == 1) : ?>checked="checked"<?php endif; ?> > Disable link previews in topic messages</label>
+</div>
+
 <div class="form-group">
     <label><input type="checkbox" name="mail_topics" value="1" <?php if ($item->mail_topics == 1) : ?>checked="checked"<?php endif; ?> > Create topics for mail conversations of the selected departments</label>
     <div><small class="text-muted">Operator bot only. A new e-mail opens a topic, the next e-mails of the conversation are posted into it, and text written in the topic is sent to the customer as a reply e-mail.</small></div>

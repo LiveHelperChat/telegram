@@ -5,6 +5,13 @@ namespace LiveHelperChatExtension\lhctelegram\providers;
 #[\AllowDynamicProperties]
 class TelegramLiveHelperChatOperator {
 
+    // Chat text, nick and bot name are stored raw. They go to Telegram with parse_mode HTML,
+    // so <, > and & must be escaped or Telegram rejects the message ("can't parse entities").
+    public static function escapeHtml($text)
+    {
+        return htmlspecialchars((string)$text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     public static function registerListeners($dispatcher)
     {
         $dispatcher->listen('chat.delete', self::class . '::deleteChat');
@@ -38,6 +45,11 @@ class TelegramLiveHelperChatOperator {
     public static function messageAddedResponder($params)
     {
         if (isset($params['source']) && $params['source'] == 'webhook') {
+            return;
+        }
+
+        // Auto responder system notes (e.g. "auto responder was reset because of sync timeout") are not chat messages
+        if (isset($params['msg']) && (int)$params['msg']->user_id === -1) {
             return;
         }
 
@@ -87,6 +99,26 @@ class TelegramLiveHelperChatOperator {
                 );
             }
         }
+    }
+
+    // Bot option "Disable link previews in topic messages": text sent to the operators group goes without the link preview
+    public static function applyLinkPreviewOption(array $data)
+    {
+        if (!isset($data['chat_id']) || isset($data['link_preview_options']) || isset($data['disable_web_page_preview'])) {
+            return $data;
+        }
+
+        // Not cached: background workers live long and the option can be switched any time
+        if (\erLhcoreClassModelTelegramBot::getCount(array('filter' => array('group_chat_id' => (string)$data['chat_id'], 'disable_link_preview' => 1))) > 0) {
+            $data['link_preview_options'] = array('is_disabled' => true);
+        }
+
+        return $data;
+    }
+
+    private static function sendMessage(array $data)
+    {
+        return \Longman\TelegramBot\Request::sendMessage(self::applyLinkPreviewOption($data));
     }
 
     private static function stripTelegramFileEmbeds($text)
@@ -354,7 +386,7 @@ class TelegramLiveHelperChatOperator {
         }
 
         try {
-            $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+            $sendData = self::sendMessage($data);
         } catch (\Exception $e) {
             \erLhcoreClassLog::write('SendFile exception ' . $e->getMessage(),
                 \ezcLog::SUCCESS_AUDIT,
@@ -518,14 +550,14 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . \erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . self::escapeHtml($params['msg']->name_support) . ']: <i>' : '👤 [' . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($chat->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
                     ];
 
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
                     }
 
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk() && $sendData->getErrorCode() == 400 && (str_contains($sendData->getDescription(), 'message thread not found') || str_contains($sendData->getDescription(), 'TOPIC_DELETED'))) {
                         // Reset telegram chat
@@ -563,7 +595,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -609,12 +641,12 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($chat->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                     ];
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
                     }
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
                         \erLhcoreClassLog::write('SendMessage BOT ['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -642,7 +674,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -709,12 +741,12 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                     ];
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
                     }
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
                         \erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -742,7 +774,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     if (!empty($failedEmbedCodes)) {
-                        \Longman\TelegramBot\Request::sendMessage(array(
+                        self::sendMessage(array(
                             'chat_id' => $tchat->bot->group_chat_id,
                             'message_thread_id' => $tchat->tchat_id,
                             'parse_mode' => 'HTML',
@@ -752,6 +784,70 @@ class TelegramLiveHelperChatOperator {
                 }
             }
         }
+    }
+
+    // ISO country code → flag emoji
+    public static function countryFlag($countryCode)
+    {
+        $countryCode = strtoupper(trim((string)$countryCode));
+        if (!preg_match('/^[A-Z]{2}$/', $countryCode)) {
+            return '';
+        }
+        return mb_chr(0x1F1E6 + ord($countryCode[0]) - 65) . mb_chr(0x1F1E6 + ord($countryCode[1]) - 65);
+    }
+
+    // Visitor page as an HTML link: page title (or readable address) as the text, the full referrer as the target
+    public static function formatChatPage($chat)
+    {
+        $referrer = ltrim(trim((string)$chat->referrer), '/');
+        $title = is_object($chat->online_user) ? trim((string)$chat->online_user->page_title) : '';
+
+        if ($referrer === '') {
+            return $title !== '' ? htmlspecialchars($title, ENT_NOQUOTES) : '';
+        }
+
+        $url = preg_match('#^https?://#i', $referrer) ? $referrer : 'https://' . $referrer;
+        $host = (string)parse_url($url, PHP_URL_HOST);
+
+        if ($title === '') {
+            $readableHost = function_exists('idn_to_utf8') ? (idn_to_utf8($host, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46) ?: $host) : $host;
+            $title = $readableHost . rawurldecode((string)parse_url($url, PHP_URL_PATH));
+        }
+
+        if (mb_strlen($title) > 80) {
+            $title = rtrim(mb_substr($title, 0, 79)) . '…';
+        }
+
+        return '<a href="' . htmlspecialchars($url, ENT_QUOTES) . '">' . htmlspecialchars($title, ENT_NOQUOTES) . '</a>';
+    }
+
+    // First message of a new chat topic: who, where from, which page — then the chat messages follow
+    public static function buildChatCard($chat)
+    {
+        $lines = array('🆕 <b>#' . (int)$chat->id . '</b> · ' . htmlspecialchars((string)$chat->department, ENT_NOQUOTES));
+
+        $who = array('👤 ' . htmlspecialchars((string)$chat->nick, ENT_NOQUOTES));
+        if (isset($chat->chat_variables_array['iwh_field']) && $chat->chat_variables_array['iwh_field'] != '') {
+            $who[] = '@' . htmlspecialchars((string)$chat->chat_variables_array['iwh_field'], ENT_NOQUOTES);
+        }
+        if (!empty($chat->phone)) {
+            $who[] = '+' . htmlspecialchars((string)$chat->phone, ENT_NOQUOTES);
+        }
+        $country = trim(self::countryFlag($chat->country_code) . ' ' . (string)$chat->country_name);
+        if ($country !== '') {
+            $who[] = htmlspecialchars($country, ENT_NOQUOTES);
+        }
+        if (!empty($chat->ip)) {
+            $who[] = '<code>' . htmlspecialchars((string)$chat->ip, ENT_NOQUOTES) . '</code>';
+        }
+        $lines[] = implode(' · ', $who);
+
+        $page = self::formatChatPage($chat);
+        if ($page !== '') {
+            $lines[] = '📄 ' . $page;
+        }
+
+        return implode("\n", $lines);
     }
 
     public static function chatStarted($params)
@@ -814,11 +910,11 @@ class TelegramLiveHelperChatOperator {
                             if (empty($botMessage->msg)) {
                                 continue;
                             }
-                            $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                            $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($params['chat']->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($botMessage->msg), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                         }
 
                         if (!empty($previousChatMessagesList)){
-                            $previousChatMessages = "\n├──Previous chat messages: \n" . implode("\n", $previousChatMessagesList);
+                            $previousChatMessages = "\n🕘 #" . $params['chat']->online_user->previous_chat->id . ":\n" . implode("\n", $previousChatMessagesList);
                         }
                     }
 
@@ -829,7 +925,7 @@ class TelegramLiveHelperChatOperator {
                             $additionalDataLines = [];
                             foreach ($additionalData as $dataItem) {
                                 if (isset($dataItem['key']) && isset($dataItem['value']) && $dataItem['key'] !== '' && $dataItem['value'] !== '') {
-                                    $additionalDataLines[] = "├──" . $dataItem['key'] . ": " . $dataItem['value'];
+                                    $additionalDataLines[] = "▫️ " . htmlspecialchars($dataItem['key'], ENT_NOQUOTES) . ": " . htmlspecialchars($dataItem['value'], ENT_NOQUOTES);
                                 }
                             }
                             if (!empty($additionalDataLines)) {
@@ -839,7 +935,7 @@ class TelegramLiveHelperChatOperator {
                     }
 
                     $visitor = array();
-                    $visitor[] = "├──New chat\n├──Department: " . ((string)$params['chat']->department) . "\n├──ID: " . $params['chat']->id . (isset($params['chat']->chat_variables_array['iwh_field']) ? "\n├──Username: @" . $params['chat']->chat_variables_array['iwh_field'] : '') . (isset($params['chat']->phone) && !empty($params['chat']->phone) ? "\n├──Phone: +" . $params['chat']->phone : '') .  "\n├──Nick: " . $params['chat']->nick .(isset($params['chat']->referrer) && !empty($params['chat']->referrer) ? "\n├──Referrer: " . ltrim($params['chat']->referrer,'/') : '') . (is_object($params['chat']->online_user) && $params['chat']->online_user->page_title != '' ? "\n├──Page title: " . $params['chat']->online_user->page_title : '') . (isset($params['chat']->ip) && !empty($params['chat']->ip) ? "\n├──IP: " . $params['chat']->ip  : '') . (isset($params['chat']->country_name) && !empty($params['chat']->country_name) ? "\n├──GEO: " . $params['chat']->country_name : '') . $additionalDataFormatted . $previousChatMessages . "\n└──Messages:";
+                    $visitor[] = self::buildChatCard($params['chat']) . $additionalDataFormatted . $previousChatMessages . "\n─────────────";
 
                     // Collect all chat messages including bot
                     $initialTelegramFiles = array();
@@ -854,7 +950,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         if ($messageText !== '' && empty($telegramFiles)) {
-                            $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                            $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($params['chat']->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                         }
 
                         $fileIndex = 0;
@@ -875,7 +971,7 @@ class TelegramLiveHelperChatOperator {
                         $data['disable_notification'] = true;
                     }
 
-                    $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                    $sendData = self::sendMessage($data);
 
                     if (!$sendData->isOk()) {
 
@@ -895,7 +991,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         $data['message_thread_id'] = $tChat->tchat_id;
-                        $sendData = \Longman\TelegramBot\Request::sendMessage($data);
+                        $sendData = self::sendMessage($data);
 
                         if (!$sendData->isOk()) {
                             \erLhcoreClassLog::write('['.$sendData->getErrorCode().']'. $sendData->getDescription(),
@@ -921,7 +1017,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         if (!empty($failedEmbedCodes)) {
-                            \Longman\TelegramBot\Request::sendMessage(array(
+                            self::sendMessage(array(
                                 'chat_id' => $tChat->bot->group_chat_id,
                                 'message_thread_id' => $tChat->tchat_id,
                                 'parse_mode' => 'HTML',
