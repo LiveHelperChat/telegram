@@ -75,6 +75,16 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 10. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache (https://onlinehelpguide.com/delete-telegram-cache-files/) and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 11. That's all. Just type /help to see what available commands are supported.
 
+### Mail conversations in topics
+
+If you use the LHC mail module, check `Create topics for mail conversations of the selected departments` in `Telegram bots > Edit bot departments` and select the mail departments in the same tab.
+
+* A new e-mail opens a topic with the customer, subject, text (quoted history is cut, long e-mails are shortened), attachment names and a link to the conversation in the back office. `site_address` in `settings/settings.ini.php` is used for the link.
+* Next e-mails of the same conversation are posted into the same topic.
+* Text written by a registered operator in the topic is sent to the customer as a reply e-mail, the same way as from the back office (threaded, sent from the mailbox, copied to the Sent folder). The customer is the `Reply-To` address when the e-mail came from the mailbox domain (e.g. a web form), otherwise the sender. A pending conversation becomes active and is assigned to the operator.
+* Only text is sent; files and commands (`/...`, `!...`) are not mailed.
+* Mail sync usually runs in resque: restart the workers after upgrading the extension.
+
 ## General tips
 
 * If you are planning only to use Telegram to support your site visitors, it makes sense to set up department online hours so the widget will remain always online even if you are not using the default web back office.
