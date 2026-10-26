@@ -75,6 +75,14 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 10. If you get an error message saying it can't find an operator with that ID, and the operator was just created, clean the cache (https://onlinehelpguide.com/delete-telegram-cache-files/) and start a chat as that operator using just the website (not Telegram). Then try registering the <id> again. It should work now.
 11. That's all. Just type /help to see what available commands are supported.
 
+### Topic icons
+
+In `Telegram bots > Edit bot departments` every department of an operator bot has a `Topic icon` select: one of Telegram's free topic icons (`getForumTopicIconStickers`, no Telegram Premium needed) or the default icon in one of the six colours. New topics of the department get that icon; without a choice the default icon is used. Mobile clients otherwise draw the first letter of the topic name.
+
+Topic names start with `<Department> ·` (`[Department]` before, so every chat topic got the letter `[`). The same row has a `Topic label`: when set, topic names of the department start with `<label> ·` instead of `<Department> ·` (e.g. `TG · Nick #12 …`), so a coloured default icon shows a meaningful first letter. The form shows a preview of the icon and the topic name.
+
+The icon set is cached for a day in `cache/telegram_topic_icons_<bot id>.json`.
+
 ## General tips
 
 * If you are planning only to use Telegram to support your site visitors, it makes sense to set up department online hours so the widget will remain always online even if you are not using the default web back office.
