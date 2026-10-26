@@ -117,7 +117,7 @@ class TelegramMailTopics
             'name' => mb_substr((class_exists(TelegramTopicIcons::class) && method_exists(TelegramTopicIcons::class, 'topicPrefix') ? TelegramTopicIcons::topicPrefix($bot, $conversation->department) : '[' . (string)$conversation->department . ']') . ' ' . ($customer['name'] !== '' ? $customer['name'] : $customer['email']) . ' #' . $conversation->id . ' | ' . (string)$mail->subject, 0, 128)
         );
 
-        // Topic icon from the department name, if the bot supports it (providers/TelegramTopicIcons.php)
+        // Topic icon chosen for the department of the bot, when providers/TelegramTopicIcons.php is present
         if (class_exists(TelegramTopicIcons::class)) {
             $data = TelegramTopicIcons::addIcon($bot, $conversation->department, $data);
         }
