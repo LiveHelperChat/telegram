@@ -5,6 +5,13 @@ namespace LiveHelperChatExtension\lhctelegram\providers;
 #[\AllowDynamicProperties]
 class TelegramLiveHelperChatOperator {
 
+    // Chat text, nick and bot name are stored raw. They go to Telegram with parse_mode HTML,
+    // so <, > and & must be escaped or Telegram rejects the message ("can't parse entities").
+    public static function escapeHtml($text)
+    {
+        return htmlspecialchars((string)$text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     public static function registerListeners($dispatcher)
     {
         $dispatcher->listen('chat.delete', self::class . '::deleteChat');
@@ -515,7 +522,7 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . $params['msg']->name_support . ']: <i>' : '👤 [' . \erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($params['msg']->name_support != '' ? '🤖 [' . self::escapeHtml($params['msg']->name_support) . ']: <i>' : '👤 [' . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($chat->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($params['msg']->name_support != '' ? '</i>' : ''))
                     ];
 
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
@@ -606,7 +613,7 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($chat->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($chat->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                     ];
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
@@ -706,7 +713,7 @@ class TelegramLiveHelperChatOperator {
                         'chat_id' => $tchat->bot->group_chat_id,
                         'message_thread_id' => $tchat->tchat_id,
                         'parse_mode' => 'HTML',
-                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
+                        'text' => trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''))
                     ];
                     if ($chat->status == \erLhcoreClassModelChat::STATUS_BOT_CHAT) {
                         $data['disable_notification'] = true;
@@ -811,7 +818,7 @@ class TelegramLiveHelperChatOperator {
                             if (empty($botMessage->msg)) {
                                 continue;
                             }
-                            $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($botMessage->msg, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                            $previousChatMessagesList[] = trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($params['chat']->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($botMessage->msg), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                         }
 
                         if (!empty($previousChatMessagesList)){
@@ -851,7 +858,7 @@ class TelegramLiveHelperChatOperator {
                         }
 
                         if ($messageText !== '' && empty($telegramFiles)) {
-                            $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . $botMessage->name_support . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable($params['chat']->nick, array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable($messageText, array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
+                            $visitor[] = trim(($botMessage->name_support != '' ? '🤖 [' . self::escapeHtml($botMessage->name_support) . ']: <i>' : '👤 ['. \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($params['chat']->nick), array('sender' => 0)) . ']: ') . \erLhcoreClassBBCodePlain::make_clickable(self::escapeHtml($messageText), array('sender' => 0)) . ($botMessage->name_support != '' ? '</i>' : ''));
                         }
 
                         $fileIndex = 0;
