@@ -50,6 +50,11 @@ class erLhcoreClassModelTelegramBot
                 }
                 return $this->callback_url;
 
+            // Sent by Telegram in the X-Telegram-Bot-Api-Secret-Token header of every webhook request
+            case 'webhook_secret':
+                $this->webhook_secret = hash_hmac('sha256', 'telegram_webhook_' . $this->id . '_' . $this->bot_api, (string)erConfigClassLhConfig::getInstance()->getSetting('site', 'secrethash'));
+                return $this->webhook_secret;
+
             default:
                 ;
                 break;
