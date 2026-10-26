@@ -8,10 +8,10 @@ namespace LiveHelperChatExtension\lhctelegram\providers;
  * Stored in lhc_telegram_bot_dep.topic_icon: a custom emoji id from Telegram's free set of topic icons
  * (getForumTopicIconStickers — bots may use only these, no Premium needed) or "color:<value>" for the
  * default icon in one of the six colours createForumTopic allows. Empty — the default icon.
- * Mobile clients otherwise draw the first letter of the topic name, which is "[" for every chat topic.
+ * Mobile clients otherwise draw the first letter of the topic name.
  *
- * The same row has topic_label: when set, topic names start with "<label> · " instead of "[Department] " —
- * a coloured icon shows the first letter of the topic name, so "TG" gives a blue "T" instead of "[".
+ * Topic names start with "<Department> · ", or with "<label> · " when the same row has topic_label —
+ * a coloured icon shows the first letter of the topic name, so "TG" gives a blue "T".
  *
  * The icon set is cached per bot for a day in cache/telegram_topic_icons_<bot id>.json.
  */
@@ -48,13 +48,13 @@ class TelegramTopicIcons
         return self::$botDeps[$key];
     }
 
-    // Start of a topic name: "<label> ·" from the department setting, else "[Department]"
+    // Start of a topic name: "<label> ·" from the department setting, else "<Department> ·"
     public static function topicPrefix($bot, $department)
     {
         $botDep = self::getBotDep($bot, $department);
         $label = $botDep !== null ? trim((string)$botDep->topic_label) : '';
 
-        return $label !== '' ? $label . ' ·' : '[' . (string)$department . ']';
+        return ($label !== '' ? $label : (string)$department) . ' ·';
     }
 
     // Adds icon_custom_emoji_id or icon_color to createForumTopic data from the department setting

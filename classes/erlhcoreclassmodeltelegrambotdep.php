@@ -47,7 +47,7 @@ class erLhcoreClassModelTelegramBotDep
     // Forum topic icon of the department: custom emoji id or "color:<value>" (providers/TelegramTopicIcons.php)
     public $topic_icon = '';
 
-    // Start of the topic name instead of "[Department]", e.g. "TG" → "TG · Nick #12 …" (the letter of a coloured icon)
+    // Start of the topic name instead of the department name, e.g. "TG" → "TG · Nick #12 …" (the letter of a coloured icon)
     public $topic_label = '';
 }
 

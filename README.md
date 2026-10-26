@@ -77,9 +77,9 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 
 ### Topic icons
 
-In `Telegram bots > Edit bot departments` every department of an operator bot has a `Topic icon` select: one of Telegram's free topic icons (`getForumTopicIconStickers`, no Telegram Premium needed) or the default icon in one of the six colours. New topics of the department get that icon; without a choice the default icon is used. Mobile clients otherwise draw the first letter of the topic name, which is `[` for every chat topic.
+In `Telegram bots > Edit bot departments` every department of an operator bot has a `Topic icon` select: one of Telegram's free topic icons (`getForumTopicIconStickers`, no Telegram Premium needed) or the default icon in one of the six colours. New topics of the department get that icon; without a choice the default icon is used. Mobile clients otherwise draw the first letter of the topic name.
 
-The same row has a `Topic label`: when set, topic names of the department start with `<label> ·` instead of `[Department]` (e.g. `TG · Nick #12 …`), so a coloured default icon shows a meaningful first letter. The form shows a preview of the icon and the topic name.
+Topic names start with `<Department> ·` (`[Department]` before, so every chat topic got the letter `[`). The same row has a `Topic label`: when set, topic names of the department start with `<label> ·` instead of `<Department> ·` (e.g. `TG · Nick #12 …`), so a coloured default icon shows a meaningful first letter. The form shows a preview of the icon and the topic name.
 
 The icon set is cached for a day in `cache/telegram_topic_icons_<bot id>.json`.
 

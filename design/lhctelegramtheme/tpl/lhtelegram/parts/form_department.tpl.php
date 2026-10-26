@@ -17,7 +17,7 @@
 
 <p>If checked. Bot will acts as client. So you will receive new chat requests and messages from visitors and will be able to chat with them.</p>
 <hr>
-<p class="text-muted"><small>Topic icon — the icon of new topics of the department in the group: one of Telegram's free topic icons or the default icon in a colour (no Telegram Premium needed). Topic label — the start of topic names instead of "[Department]", e.g. "TG" gives "TG · Nick #12 …"; a coloured icon shows its first letter. Operator bot only.</small></p>
+<p class="text-muted"><small>Topic icon — the icon of new topics of the department in the group: one of Telegram's free topic icons or the default icon in a colour (no Telegram Premium needed). Topic label — the start of topic names instead of the department name ("Department · Nick #12 …"), e.g. "TG" gives "TG · Nick #12 …"; a coloured icon shows its first letter. Operator bot only.</small></p>
 <?php
 $departmentsSelected = $item->getDepartments();
 $topicIconSet = $item->bot_client == 1 && $item->id > 0 ? \LiveHelperChatExtension\lhctelegram\providers\TelegramTopicIcons::getIcons($item) : array();
@@ -59,7 +59,7 @@ foreach (erLhcoreClassModelDepartament::getList() as $dep) :
         var select = row.querySelector('select');
         var label = row.querySelector('input[type=text]');
         var update = function () {
-            var start = label.value.trim() !== '' ? label.value.trim() + ' ·' : '[' + preview.dataset.department + ']';
+            var start = (label.value.trim() !== '' ? label.value.trim() : preview.dataset.department) + ' ·';
             var name = start + ' Ivan #12345 | 1.2.3.4';
             var value = select.value;
             var icon = document.createElement('span');
