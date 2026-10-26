@@ -23,6 +23,9 @@ class TelegramLiveHelperChatOperator {
         $dispatcher->listen('chat.messages_added_passive', self::class . '::messageAdded');
         $dispatcher->listen('chat.genericbot_get_trigger_click_processed', self::class . '::triggerClicked');
         $dispatcher->listen('onlineuser.pageview_logged', self::class . '::pageViewLogged');
+
+        // E-mails in forum topics (bot option mail_topics)
+        TelegramMailTopics::registerListeners($dispatcher);
     }
 
     public static function messageAddedAdmin($params)

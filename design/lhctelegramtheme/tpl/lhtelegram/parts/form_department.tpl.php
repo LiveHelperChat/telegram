@@ -15,6 +15,11 @@
 </div>
 
 <div class="form-group">
+    <label><input type="checkbox" name="mail_topics" value="1" <?php if ($item->mail_topics == 1) : ?>checked="checked"<?php endif; ?> > Create topics for mail conversations of the selected departments</label>
+    <div><small class="text-muted">Operator bot only. A new e-mail opens a topic, the next e-mails of the conversation are posted into it, and text written in the topic is sent to the customer as a reply e-mail.</small></div>
+</div>
+
+<div class="form-group">
     <label>Group Chat ID</label>
     <input name="group_chat_id" class="form-control form-control-sm" type="text" value="<?php echo (int)$item->group_chat_id?>" />
 </div>
