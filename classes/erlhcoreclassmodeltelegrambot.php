@@ -24,7 +24,8 @@ class erLhcoreClassModelTelegramBot
             'group_chat_id' => $this->group_chat_id,
             'delete_on_close' => $this->delete_on_close,
             'notify_page_change' => $this->notify_page_change,
-            'disable_link_preview' => $this->disable_link_preview
+            'disable_link_preview' => $this->disable_link_preview,
+            'topic_commands' => $this->topic_commands
         );
     }  
 
@@ -100,6 +101,7 @@ class erLhcoreClassModelTelegramBot
     public $delete_on_close = 0;
     public $notify_page_change = 0;
     public $disable_link_preview = 0;
+    public $topic_commands = '';
 }
 
 ?>

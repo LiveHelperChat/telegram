@@ -320,6 +320,9 @@ class GenericmessageCommand extends SystemCommand
 
         if ($tBot->bot_client == 1) {
 
+            // Keep the "/" menu of the group in line with the LHC commands (sent only when they changed)
+            \LiveHelperChatExtension\lhctelegram\providers\TelegramTopicCommands::sync($tBot);
+
             $operator = \erLhcoreClassModelTelegramOperator::findOne(array('filter' => array('tuser_id' => $message->getFrom()->getId(), 'confirmed' => 1, 'bot_id' => $tBot->id)));
 
             if ($operator instanceof \erLhcoreClassModelTelegramOperator) {

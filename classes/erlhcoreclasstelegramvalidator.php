@@ -55,6 +55,9 @@ class erLhcoreClassTelegramValidator
             'disable_link_preview' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'topic_commands' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
             'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
@@ -78,6 +81,9 @@ class erLhcoreClassTelegramValidator
         } else {
             $item->disable_link_preview = 0;
         }
+
+        // LHC bot commands shown in the "/" menu of the group, comma separated, in this order (see providers/TelegramTopicCommands.php)
+        $item->topic_commands = $form->hasValidData('topic_commands') ? \LiveHelperChatExtension\lhctelegram\providers\TelegramTopicCommands::normalizeList($form->topic_commands) : '';
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {
             if ($item->bot_client != 1) {
@@ -110,6 +116,7 @@ class erLhcoreClassTelegramValidator
                 $botDep->saveThis();
             }
         }
+
 
         return [];
     }

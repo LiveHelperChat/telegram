@@ -15,6 +15,12 @@
 </div>
 
 <div class="form-group">
+    <label>Commands in the "/" menu of the group</label>
+    <input name="topic_commands" class="form-control form-control-sm" type="text" placeholder="command1, command2" value="<?php echo htmlspecialchars((string)$item->topic_commands)?>" />
+    <small class="text-muted">Bot commands (Bot → Commands) in the order they should appear, comma separated. In a topic "/name" works as "!name". Available: <?php echo htmlspecialchars(implode(', ', array_map(function ($command) { return $command->command; }, erLhcoreClassModelGenericBotCommand::getList(array('limit' => false)))))?></small>
+</div>
+
+<div class="form-group">
     <label>Group Chat ID</label>
     <input name="group_chat_id" class="form-control form-control-sm" type="text" value="<?php echo (int)$item->group_chat_id?>" />
 </div>
