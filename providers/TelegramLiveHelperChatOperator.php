@@ -793,6 +793,139 @@ class TelegramLiveHelperChatOperator {
         return mb_chr(0x1F1E6 + ord($countryCode[0]) - 65) . mb_chr(0x1F1E6 + ord($countryCode[1]) - 65);
     }
 
+    // Language of the default site access (ru_RU → ru): names in the chat card are shown in it
+    public static function cardLanguage()
+    {
+        $cfg = \erConfigClassLhConfig::getInstance();
+        $options = $cfg->getSetting('site_access_options', $cfg->getSetting('site', 'default_site_access'), false);
+        $locale = is_array($options) && !empty($options['locale']) ? (string)$options['locale'] : 'en_EN';
+        return strtolower(substr($locale, 0, 2));
+    }
+
+    // Visitor location from the MaxMind City database of LHC geo detection, names in the card language:
+    // «🇷🇺 Россия, Чита · Забайкальский край». The city is shown only when the database is sure about it
+    // (accuracy radius under 200 km), otherwise country + region. Falls back to the stored English country name.
+    public static function formatChatLocation($chat)
+    {
+        $lang = self::cardLanguage();
+        $flag = self::countryFlag($chat->country_code);
+        $country = (string)$chat->country_name;
+        $place = array();
+
+        if (!empty($chat->ip) && class_exists('\MaxMind\Db\Reader')) {
+            $geoData = \erLhcoreClassModelChatConfig::fetch('geo_data')->data;
+            $file = is_array($geoData) && !empty($geoData['max_mind_city_location']) ? $geoData['max_mind_city_location'] : 'var/external/geoip/GeoLite2-City.mmdb';
+            try {
+                $record = null;
+                if (is_file($file)) {
+                    $reader = new \MaxMind\Db\Reader($file);
+                    $record = $reader->get((string)$chat->ip);
+                    $reader->close();
+                }
+                if (is_array($record)) {
+                    $name = function ($node) use ($lang) {
+                        return isset($node['names'][$lang]) ? $node['names'][$lang] : (isset($node['names']['en']) ? $node['names']['en'] : '');
+                    };
+                    if (isset($record['country'])) {
+                        $iso = isset($record['country']['iso_code']) ? (string)$record['country']['iso_code'] : (string)$chat->country_code;
+                        $flag = self::countryFlag($iso);
+                        // intl gives the everyday names (MaxMind says «ФРГ» for Germany in Russian)
+                        $country = class_exists('\Locale') && $iso !== '' ? (string)\Locale::getDisplayRegion('-' . strtoupper($iso), $lang) : '';
+                        if ($country === '' || strcasecmp($country, $iso) === 0) {
+                            $country = $name($record['country']);
+                        }
+                    }
+                    $radius = isset($record['location']['accuracy_radius']) ? (int)$record['location']['accuracy_radius'] : 0;
+                    $city = isset($record['city']) && $radius < 200 ? $name($record['city']) : '';
+                    $region = isset($record['subdivisions'][0]) ? self::regionCase($name($record['subdivisions'][0]), $lang) : '';
+                    if ($city !== '') {
+                        $place[] = $city;
+                    }
+                    // Region only repeating the city (Moscow · Moscow) is noise
+                    if ($region !== '' && mb_strtolower($region) !== mb_strtolower($city)) {
+                        $place[] = $region;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Broken or missing database: keep what LHC stored
+            }
+        }
+
+        $location = trim($flag . ' ' . $country);
+        if (!empty($place)) {
+            $location .= ($location !== '' ? ', ' : '') . implode(' · ', $place);
+        }
+
+        return $location;
+    }
+
+    // MaxMind Russian names capitalise «Край», «Область»; Russian spelling wants them in lower case
+    public static function regionCase($region, $lang)
+    {
+        if ($lang !== 'ru') {
+            return $region;
+        }
+        return preg_replace_callback('/(?<=\s)(Край|Область|Автономный Округ|Округ)(?=\s|$)/u', function ($m) {
+            return mb_strtolower($m[1]);
+        }, $region);
+    }
+
+    // Messenger visitor details LHC does not keep: language and username from the stored incoming
+    // webhook payload of the chat (Telegram: message.from / callback_query.from, Max: user_locale + sender/user)
+    public static function messengerVisitor($chat)
+    {
+        $info = array('lang' => '', 'username' => '', 'user_id' => '', 'network' => '');
+
+        if (empty($chat->iwh_id)) {
+            return $info;
+        }
+
+        $incoming = \erLhcoreClassModelChatIncoming::findOne(array('filter' => array('chat_id' => $chat->id)));
+        $payload = is_object($incoming) ? json_decode((string)$incoming->payload, true) : null;
+        if (!is_array($payload)) {
+            return $info;
+        }
+
+        foreach (array('message', 'callback_query', 'edited_message') as $key) {
+            if (isset($payload[$key]['from']) && is_array($payload[$key]['from'])) {
+                $from = $payload[$key]['from'];
+                $info['network'] = 'telegram';
+                $info['lang'] = isset($from['language_code']) ? (string)$from['language_code'] : '';
+                $info['username'] = isset($from['username']) ? (string)$from['username'] : '';
+                $info['user_id'] = isset($from['id']) ? (string)$from['id'] : '';
+                return $info;
+            }
+        }
+
+        if (isset($payload['update_type'])) {
+            if (isset($payload['message']['sender']) && empty($payload['message']['sender']['is_bot'])) {
+                $user = $payload['message']['sender'];
+            } elseif (isset($payload['callback']['user'])) {
+                $user = $payload['callback']['user'];
+            } else {
+                $user = isset($payload['user']) ? $payload['user'] : array();
+            }
+            $info['network'] = 'max';
+            $info['lang'] = isset($payload['user_locale']) ? (string)$payload['user_locale'] : '';
+            $info['username'] = isset($user['username']) ? (string)$user['username'] : '';
+            $info['user_id'] = isset($user['user_id']) ? (string)$user['user_id'] : '';
+        }
+
+        return $info;
+    }
+
+    // Language code → «🗣 English» in the card language; the card language itself is the norm and is not shown
+    public static function formatLanguage($code)
+    {
+        $lang = self::cardLanguage();
+        $code = strtolower(str_replace('_', '-', trim((string)$code)));
+        if ($code === '' || !preg_match('/^[a-z]{2,3}(-[a-z0-9]+)*$/', $code) || strpos($code, $lang) === 0) {
+            return '';
+        }
+        $name = class_exists('\Locale') ? (string)\Locale::getDisplayLanguage($code, $lang) : '';
+        return '🗣 ' . htmlspecialchars($name !== '' && $name !== $code ? $name : $code, ENT_NOQUOTES);
+    }
+
     // Visitor page as an HTML link: page title (or readable address) as the text, the full referrer as the target
     public static function formatChatPage($chat)
     {
@@ -823,21 +956,39 @@ class TelegramLiveHelperChatOperator {
     {
         $lines = array('🆕 <b>#' . (int)$chat->id . '</b> · ' . htmlspecialchars((string)$chat->department, ENT_NOQUOTES));
 
-        $who = array('👤 ' . htmlspecialchars((string)$chat->nick, ENT_NOQUOTES));
-        if (isset($chat->chat_variables_array['iwh_field']) && $chat->chat_variables_array['iwh_field'] != '') {
-            $who[] = '@' . htmlspecialchars((string)$chat->chat_variables_array['iwh_field'], ENT_NOQUOTES);
+        $messenger = self::messengerVisitor($chat);
+        $username = isset($chat->chat_variables_array['iwh_field']) && $chat->chat_variables_array['iwh_field'] != '' ? (string)$chat->chat_variables_array['iwh_field'] : $messenger['username'];
+
+        // Telegram visitor without a username: the name links to the profile by id
+        $nick = htmlspecialchars((string)$chat->nick, ENT_NOQUOTES);
+        if ($username === '' && $messenger['network'] == 'telegram' && ctype_digit($messenger['user_id'])) {
+            $nick = '<a href="tg://user?id=' . $messenger['user_id'] . '">' . $nick . '</a>';
+        }
+
+        $who = array('👤 ' . $nick);
+        if ($username !== '') {
+            $who[] = '@' . htmlspecialchars($username, ENT_NOQUOTES);
         }
         if (!empty($chat->phone)) {
             $who[] = '+' . htmlspecialchars((string)$chat->phone, ENT_NOQUOTES);
         }
-        $country = trim(self::countryFlag($chat->country_code) . ' ' . (string)$chat->country_name);
-        if ($country !== '') {
-            $who[] = htmlspecialchars($country, ENT_NOQUOTES);
-        }
-        if (!empty($chat->ip)) {
-            $who[] = '<code>' . htmlspecialchars((string)$chat->ip, ENT_NOQUOTES) . '</code>';
+        $language = self::formatLanguage($messenger['lang']);
+        if ($language !== '') {
+            $who[] = $language;
         }
         $lines[] = implode(' · ', $who);
+
+        $where = array();
+        $location = self::formatChatLocation($chat);
+        if ($location !== '') {
+            $where[] = htmlspecialchars($location, ENT_NOQUOTES);
+        }
+        if (!empty($chat->ip)) {
+            $where[] = '<code>' . htmlspecialchars((string)$chat->ip, ENT_NOQUOTES) . '</code>';
+        }
+        if (!empty($where)) {
+            $lines[] = implode(' · ', $where);
+        }
 
         $page = self::formatChatPage($chat);
         if ($page !== '') {
