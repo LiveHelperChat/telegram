@@ -205,6 +205,55 @@ class TelegramLiveHelperChatOperator {
         return true;
     }
 
+    // The widget uploads a recorded voice message as "record.mp3" (VoiceMessage.js)
+    private static function isWidgetVoiceRecording($file)
+    {
+        $extension = strtolower((string)$file->extension);
+        $type = strtolower((string)$file->type);
+        return (string)$file->upload_name === 'record.mp3' && ($extension === 'mp3' || $type === 'audio/mpeg');
+    }
+
+    private static function getVoiceRecordSetting($key, $default)
+    {
+        $settings = \erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhctelegram')->settings;
+        return (isset($settings['voice_record']) && is_array($settings['voice_record']) && array_key_exists($key, $settings['voice_record'])) ? $settings['voice_record'][$key] : $default;
+    }
+
+    // Converts a widget voice recording with voice_record.convert_command ({file_orig}, {file_dest}).
+    // Returns the converted copy in a temporary directory, or null (no command, converter missing or failed).
+    private static function convertVoiceRecording($sourcePath)
+    {
+        $command = (string)self::getVoiceRecordSetting('convert_command', '');
+        if ($command === '' || !is_file($sourcePath)) {
+            return null;
+        }
+        $dir = sys_get_temp_dir() . '/lhc_tg_voice_' . uniqid('', true);
+        if (!@mkdir($dir, 0755, true)) {
+            return null;
+        }
+        $destination = $dir . '/voice.ogg';
+        $cmd = str_replace(array('{file_orig}', '{file_dest}'), array(escapeshellarg($sourcePath), escapeshellarg($destination)), $command);
+        $output = array();
+        $exitCode = 1;
+        @exec($cmd . ' 2>&1', $output, $exitCode);
+        if ($exitCode === 0 && is_file($destination) && filesize($destination) > 0) {
+            return $destination;
+        }
+        @unlink($destination);
+        @rmdir($dir);
+        \erLhcoreClassLog::write('Voice recording conversion failed [' . $exitCode . '] ' . mb_substr(implode(' ', $output), 0, 300),
+            \ezcLog::SUCCESS_AUDIT,
+            array(
+                'source' => 'lhc',
+                'category' => 'telegram_exception',
+                'line' => __LINE__,
+                'file' => __FILE__,
+                'object_id' => 0
+            )
+        );
+        return null;
+    }
+
     private static function sendTelegramChatFile($tchat, $fileData, $caption, $disableNotification = false)
     {
         $file = $fileData['file'];
@@ -219,6 +268,7 @@ class TelegramLiveHelperChatOperator {
         $method = 'sendDocument';
         $field = 'document';
         $isStickerCandidate = false;
+        $isVoiceRecording = false;
 
         if ($extension === 'tgs') {
             $method = 'sendSticker';
@@ -251,6 +301,11 @@ class TelegramLiveHelperChatOperator {
         } elseif (in_array($extension, array('mp3', 'm4a')) || in_array($type, array('audio/mpeg', 'audio/mp4'))) {
             $method = 'sendAudio';
             $field = 'audio';
+            if (self::isWidgetVoiceRecording($file) && self::getVoiceRecordSetting('send_as_voice', true)) {
+                $method = 'sendVoice';
+                $field = 'voice';
+                $isVoiceRecording = true;
+            }
         } elseif ($extension === 'mp4' || $type === 'video/mp4') {
             $method = 'sendVideo';
             $field = 'video';
@@ -273,7 +328,15 @@ class TelegramLiveHelperChatOperator {
         }
 
         if ($fileSize > 0 && $fileSize <= 52428800) {
-            $fileHandle = \Longman\TelegramBot\Request::encodeFile($file->file_path_server);
+            // Voice recorded in the widget: an OGG/Opus copy shows in Telegram like a voice message recorded there.
+            // Without a converter the MP3 goes as a voice message as it is. The chat file itself is not changed.
+            $tempVoiceFile = $isVoiceRecording ? self::convertVoiceRecording($file->file_path_server) : null;
+            $fileHandle = \Longman\TelegramBot\Request::encodeFile($tempVoiceFile !== null ? $tempVoiceFile : $file->file_path_server);
+            // The open handle keeps the converted copy readable, the file itself can go now
+            if ($tempVoiceFile !== null) {
+                @unlink($tempVoiceFile);
+                @rmdir(dirname($tempVoiceFile));
+            }
             if (is_resource($fileHandle)) {
                 $data[$field] = $fileHandle;
             } else {
@@ -307,6 +370,18 @@ class TelegramLiveHelperChatOperator {
                         $data['caption'] = $caption;
                     }
                     $sendData = \Longman\TelegramBot\Request::send($fallbackMethod, $data);
+                }
+            }
+            // sendVoice refused (e.g. voice messages are forbidden) - send the recording as audio
+            if ($isVoiceRecording && !$sendData->isOk()) {
+                if (isset($data['voice']) && is_resource($data['voice'])) {
+                    @fclose($data['voice']);
+                }
+                unset($data['voice']);
+                $fileHandle = \Longman\TelegramBot\Request::encodeFile($file->file_path_server);
+                if (is_resource($fileHandle)) {
+                    $data['audio'] = $fileHandle;
+                    $sendData = \Longman\TelegramBot\Request::send('sendAudio', $data);
                 }
             }
         } catch (\Exception $e) {
