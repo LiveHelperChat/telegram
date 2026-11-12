@@ -576,6 +576,12 @@ class GenericmessageCommand extends SystemCommand
                     }
                 }
 
+                // A mail topic: the text goes to the customer as a reply e-mail
+                $mailReply = \LiveHelperChatExtension\lhctelegram\providers\TelegramMailTopics::operatorReply($tBot, $message, $operator, $text, $type);
+                if ($mailReply !== null) {
+                    return $mailReply;
+                }
+
             } elseif ($type != 'forum_topic_created' && $type != 'forum_topic_edited') {
                 $data = [
                     'chat_id' => $chat_id,

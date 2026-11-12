@@ -55,6 +55,9 @@ class erLhcoreClassTelegramValidator
             'disable_link_preview' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'mail_topics' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null,FILTER_REQUIRE_ARRAY),
             'group_chat_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int',null),
         );
@@ -78,6 +81,9 @@ class erLhcoreClassTelegramValidator
         } else {
             $item->disable_link_preview = 0;
         }
+
+        // E-mails of the bot departments in forum topics (providers/TelegramMailTopics.php)
+        $item->mail_topics = ($form->hasValidData('mail_topics') && $form->mail_topics == true) ? 1 : 0;
 
         if ($form->hasValidData('bot_client') && $form->bot_client == true) {
             if ($item->bot_client != 1) {
