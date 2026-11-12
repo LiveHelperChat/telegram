@@ -84,6 +84,7 @@ Example of final setup. Each customer get's it's own topic. and you can use tele
 * Same visitor chats are written to the same topic as long Online Visitor record exists. You can extend it to be valid for one year in `Settings -> Chat configuration -> Online tracking -> How many days keep records of online users.`
 * Integration supports quick reply buttons. Using these, you can make a quick navigation.
 * Telegram API has limit of 20MB per file size limit. Please make sure you set the appropriate limit in lhc files sections.
+* Telegram allows a bot about 20 messages a minute in one group. When it answers `429 Too Many Requests`, the extension waits the time Telegram asks for (up to 10 seconds, at most twice) and sends the message again. Calls Telegram refuses are written to the audit log (`System -> Audit log`, category `telegram_api_error`) with the method and Telegram's description.
 * You now can set bot option to delete topic on chat close/delete to keep it clean.
 * In some cases LHC tries to send empty body message you can avoid that by
   * Setting in Rest API call `Do not send request if this variable is empty` to `{{msg_html_nobr}}`
